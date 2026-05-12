@@ -582,16 +582,25 @@ function calcConsistency() {
 //  MOMENTUM (last 3 weekdays)
 // ════════════════════════════════════════════════════════════════
 function calcMomentum() {
-  let days=[], d=new Date(todayD());
-  while (days.length<3) {
+  if (!inPlan(todayD()) && todayD() < CFG.PLAN_START) {
+    return { color:'var(--blue)', bg:'var(--blue-lt)', border:'#BBDEFB', label:'Plan starts 18 May 2026. Momentum tracking begins then.' };
+  }
+  let days=[], d=new Date(todayD()), safety=0;
+  while (days.length<3 && safety<60) {
+    safety++;
     const dow=d.getDay();
-    if (dow!==0&&dow!==6&&inPlan(d)) {
-      const t=loadTicks(d);
-      days.push((t.study?1:0)+(t.biz?1:0)+(t.ex?1:0));
+    if (dow!==0 && dow!==6) {
+      if (inPlan(d)) {
+        const t=loadTicks(d);
+        days.push((t.study?1:0)+(t.biz?1:0)+(t.ex?1:0));
+      } else if (d < CFG.PLAN_START) {
+        days.push(0);
+      }
     }
     d.setDate(d.getDate()-1);
   }
-  const avg = days.reduce((a,b)=>a+b,0)/(days.length*3);
+  if (days.length===0) return { color:'var(--blue)', bg:'var(--blue-lt)', border:'#BBDEFB', label:'No data yet — tick off your first day to start tracking momentum.' };
+  const avg = days.reduce((a,b)=>a+b,0)/Math.max(days.length*3,1);
   if (avg>=.7) return { color:'var(--green)', bg:'var(--green-lt)', border:'#A9DFBF', label:'Strong momentum — you\'re in the groove. Keep it going.' };
   if (avg>=.4) return { color:'var(--amber)', bg:'var(--amber-lt)', border:'#F5CBA7', label:'Momentum softening. One good day resets the pattern.' };
   return { color:'var(--red)', bg:'var(--red-lt)', border:'#F1948A', label:'Momentum low. Start with exercise — it anchors everything else.' };
@@ -600,13 +609,20 @@ function calcMomentum() {
 // ════════════════════════════════════════════════════════════════
 //  GOOGLE SHEETS — fetch all tabs
 // ════════════════════════════════════════════════════════════════
+function fetchWithTimeout(url, ms=5000) {
+  return Promise.race([
+    fetch(url),
+    new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms))
+  ]);
+}
+
 async function fetchSheet(tab) {
   if (!IS_CONFIGURED) return null;
   const cacheKey = `sheet_${tab}`;
   if (SESSION[cacheKey]) return SESSION[cacheKey];
   try {
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${CFG.SHEET_ID}/values/${encodeURIComponent(tab)}?key=${CFG.SHEETS_API_KEY}`;
-    const r = await fetch(url);
+    const r = await fetchWithTimeout(url);
     if (!r.ok) return null;
     const data = await r.json();
     SESSION[cacheKey] = data.values || [];
@@ -699,6 +715,9 @@ async function fetchGCal() {
 // ════════════════════════════════════════════════════════════════
 //  RENDER ENGINE
 // ════════════════════════════════════════════════════════════════
+let renderLock = false;
+let pendingTab = null;
+
 function switchTab(t) {
   activeTab = t;
   ['today','week','launch'].forEach(id => document.getElementById('tab-'+id).classList.toggle('on', id===t));
@@ -706,27 +725,44 @@ function switchTab(t) {
 }
 
 function updateHeader() {
-  const t = todayD();
-  document.getElementById('hdrDate').textContent = fmt(t);
-  const wn = weekNum(t);
-  document.getElementById('hdrWeek').textContent = inPlan(t) ? `Week ${wn} of 16` : '';
+  try {
+    const t = todayD();
+    document.getElementById('hdrDate').textContent = fmt(t);
+    const wn = weekNum(t);
+    document.getElementById('hdrWeek').textContent = inPlan(t) ? `Week ${wn} of 16` : '';
+  } catch(e) {}
 }
 
 async function render() {
+  if (renderLock) { pendingTab = activeTab; return; }
+  renderLock = true;
   updateHeader();
   const main = document.getElementById('main');
-  if (activeTab==='today') main.innerHTML = await renderToday();
-  else if (activeTab==='week') main.innerHTML = await renderWeek();
-  else main.innerHTML = await renderLaunch();
-}
-
-// ── CHECK CIRCLE HTML ─────────────────────────────────────────
-function chkHtml(on) {
-  return `<div class="chk ${on?'on':''}">
-    ${on?`<svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-      <polyline points="2,6 5,9 10,3" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>`:''}
-  </div>`;
+  main.style.opacity = '0.5';
+  try {
+    let html = '';
+    if (activeTab==='today') html = await renderToday();
+    else if (activeTab==='week') html = await renderWeek();
+    else html = await renderLaunch();
+    main.innerHTML = html;
+  } catch(e) {
+    main.innerHTML = `<div style="padding:24px;text-align:center;color:#888;font-size:14px;">
+      Something went wrong loading this view.<br><br>
+      <button onclick="render()" style="padding:8px 20px;background:#1C2B3A;color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer;">Retry</button>
+    </div>`;
+  } finally {
+    main.style.opacity = '1';
+    renderLock = false;
+    if (pendingTab && pendingTab !== activeTab) {
+      const next = pendingTab;
+      pendingTab = null;
+      activeTab = next;
+      ['today','week','launch'].forEach(id => document.getElementById('tab-'+id).classList.toggle('on', id===next));
+      render();
+    } else {
+      pendingTab = null;
+    }
+  }
 }
 
 // ── SETUP BANNER ──────────────────────────────────────────────
