@@ -408,7 +408,7 @@ const CFG = {
   GCAL_CALENDAR_ID:  'jeanluc@redthreadadvisory.co.uk',
   GCAL_OAUTH_CLIENT: '885928804664-09u7bikk7mjgvkuv4u3dkfhjlf6jtbuq.apps.googleusercontent.com',
   APPS_SCRIPT_URL:   'https://script.google.com/macros/s/AKfycby8isTODtU4oNtG9keUdPRmjVcVBYZyte1h1emKJFA4pRXN75o-SBkCvPqDRj0jyzGv/exec',
-  PLAN_START:        new Date(2026, 4, 12),
+  PLAN_START:        new Date(2026, 4, 18),
 };
 
 // Detect if configured
@@ -581,19 +581,71 @@ function getWeekdays(d) {
 // ════════════════════════════════════════════════════════════════
 //  LOCAL STORAGE — daily ticks
 // ════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════
+//  TICKS — synced to Google Sheet + localStorage fallback
+// ════════════════════════════════════════════════════════════════
 function lsKey(d) { return `jl3_${d.getFullYear()}_${d.getMonth()}_${d.getDate()}`; }
-function loadTicks(d) { try { return JSON.parse(localStorage.getItem(lsKey(d))) || {}; } catch(e) { return {}; } }
-function saveTicks(d, obj) { try { localStorage.setItem(lsKey(d), JSON.stringify(obj)); } catch(e) {} }
-
+function lsLoadTicks(d) { try { return JSON.parse(localStorage.getItem(lsKey(d))) || {}; } catch(e) { return {}; } }
+function lsSaveTicks(d, obj) { try { localStorage.setItem(lsKey(d), JSON.stringify(obj)); } catch(e) {} }
+function dateStr(d) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+const TICK_CACHE = {};
+function loadTicks(d) {
+  const key = dateStr(d);
+  if (TICK_CACHE[key]) return TICK_CACHE[key];
+  const ls = lsLoadTicks(d);
+  TICK_CACHE[key] = ls;
+  return ls;
+}
+function saveTicks(d, obj) {
+  const key = dateStr(d);
+  TICK_CACHE[key] = obj;
+  lsSaveTicks(d, obj);
+  syncTicksToSheet(d, obj).catch(() => {});
+}
+async function syncTicksToSheet(d, obj) {
+  if (!IS_CONFIGURED || !CFG.APPS_SCRIPT_URL) return;
+  try {
+    await fetch(CFG.APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'save_ticks', date: dateStr(d), study: obj.study ? 1 : 0, biz: obj.biz ? 1 : 0, ex: obj.ex ? 1 : 0 })
+    });
+  } catch(e) {}
+}
+async function loadTicksFromSheet() {
+  if (!IS_CONFIGURED) return;
+  try {
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${CFG.SHEET_ID}/values/DailyTicks?key=${CFG.SHEETS_API_KEY}`;
+    const r = await fetchWithTimeout(url, 5000);
+    if (!r || !r.ok) return;
+    const data = await r.json().catch(() => ({}));
+    const rows = data.values || [];
+    rows.slice(1).forEach(row => {
+      if (!row[0]) return;
+      const obj = { study: row[1]==='1'||row[1]===1, biz: row[2]==='1'||row[2]===1, ex: row[3]==='1'||row[3]===1 };
+      TICK_CACHE[row[0]] = obj;
+      const parts = row[0].split('-');
+      if (parts.length === 3) {
+        const d = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+        lsSaveTicks(d, obj);
+      }
+    });
+  } catch(e) {}
+}
 function toggleTick(field) {
   const t = loadTicks(viewDate);
   t[field] = !t[field];
   saveTicks(viewDate, t);
   render();
 }
-
 function resetDay() {
-  if (confirm('Reset all ticks for this day?')) { localStorage.removeItem(lsKey(viewDate)); render(); }
+  if (confirm('Reset all ticks for this day?')) {
+    const key = dateStr(viewDate);
+    delete TICK_CACHE[key];
+    localStorage.removeItem(lsKey(viewDate));
+    syncTicksToSheet(viewDate, {study:0, biz:0, ex:0}).catch(()=>{});
+    render();
+  }
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -1273,7 +1325,7 @@ async function renderLaunch() {
 //  INIT
 // ════════════════════════════════════════════════════════════════
 handleOAuthRedirect();
-render();
+loadTicksFromSheet().then(() => render()).catch(() => render());
 </script>
 </body>
 </html>
