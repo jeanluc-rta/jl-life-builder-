@@ -623,8 +623,11 @@ async function fetchSheet(tab) {
   try {
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${CFG.SHEET_ID}/values/${encodeURIComponent(tab)}?key=${CFG.SHEETS_API_KEY}`;
     const r = await fetchWithTimeout(url);
-    if (!r.ok) return null;
-    const data = await r.json();
+    if (!r.ok) {
+      console.warn('Sheet fetch failed:', tab, r.status);
+      return null;
+    }
+    const data = await r.json().catch(() => ({}));
     SESSION[cacheKey] = data.values || [];
     return SESSION[cacheKey];
   } catch(e) { return null; }
@@ -789,7 +792,7 @@ async function renderToday() {
   const dow = d.getDay();
   const isWkend = dow===0||dow===6;
   const wn = weekNum(d);
-  const wd = await getScheduleWeek(wn);
+  const wd = await getScheduleWeek(wn).catch(() => FALLBACK_SCHEDULE[Math.min(Math.max(wn||1,1),16)]);
   const ticks = loadTicks(d);
   const inP = inPlan(d);
 
