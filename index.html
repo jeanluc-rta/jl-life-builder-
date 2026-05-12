@@ -741,6 +741,7 @@ function updateHeader() {
 async function render() {
   if (renderLock) { pendingTab = activeTab; return; }
   renderLock = true;
+  console.log('render start, tab:', activeTab, 'date:', viewDate.toISOString());
   updateHeader();
   const main = document.getElementById('main');
   main.style.opacity = '0.5';
@@ -751,8 +752,9 @@ async function render() {
     else html = await renderLaunch();
     main.innerHTML = html;
   } catch(e) {
+    console.error('render error:', e, e.stack);
     main.innerHTML = `<div style="padding:24px;text-align:center;color:#888;font-size:14px;">
-      Something went wrong loading this view.<br><br>
+      Error: ${e.message}<br><br>
       <button onclick="renderLock=false;render()" style="padding:8px 20px;background:#1C2B3A;color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer;">Retry</button>
     </div>`;
   } finally {
