@@ -402,16 +402,72 @@ body {
 //  CONFIG — fill these in after Google Sheet + API setup
 // ════════════════════════════════════════════════════════════════
 const CFG = {
-  SHEET_ID:          '1HNdoYe4EfxoQIq-hw8lfRZyMdUjF43PVvYYnKVvohOM',          // from Sheet URL
-  SHEETS_API_KEY:    'AIzaSyDqrM7SWhevZ8X770DYEbnpLv0UpB6pZtY',    // from Google Cloud Console
-  GCAL_API_KEY:      '1HNdoYe4EfxoQIq-hw8lfRZyMdUjF43PVvYYnKVvohOM',  // same or separate key
-  GCAL_CALENDAR_ID:  'jeanluc@redthreadadvisory.co.uk',    // e.g. abc123@group.calendar.google.com
-  APPS_SCRIPT_URL:   'https://script.google.com/macros/s/AKfycby8isTODtU4oNtG9keUdPRmjVcVBYZyte1h1emKJFA4pRXN75o-SBkCvPqDRj0jyzGv/exec',  // for Apple Calendar write
-  PLAN_START:        new Date(2026, 4, 18),            // 18 May 2026
+  SHEET_ID:          '1HNdoYe4EfxoQIq-hw8lfRZyMdUjF43PVvYYnKVvohOM',
+  SHEETS_API_KEY:    'AIzaSyDqrM7SWhevZ8X770DYEbnpLv0UpB6pZtY',
+  GCAL_API_KEY:      'AIzaSyDqrM7SWhevZ8X770DYEbnpLv0UpB6pZtY',
+  GCAL_CALENDAR_ID:  'jeanluc@redthreadadvisory.co.uk',
+  GCAL_OAUTH_CLIENT: '885928804664-09u7bikk7mjgvkuv4u3dkfhjlf6jtbuq.apps.googleusercontent.com',
+  APPS_SCRIPT_URL:   'https://script.google.com/macros/s/AKfycby8isTODtU4oNtG9keUdPRmjVcVBYZyte1h1emKJFA4pRXN75o-SBkCvPqDRj0jyzGv/exec',
+  PLAN_START:        new Date(2026, 4, 18),
 };
 
 // Detect if configured
 const IS_CONFIGURED = CFG.SHEET_ID !== 'YOUR_GOOGLE_SHEET_ID';
+
+// ── OAUTH STATE ──
+let gcalAccessToken = null;
+let gcalTokenExpiry = 0;
+
+function isGCalAuthed() {
+  return gcalAccessToken && Date.now() < gcalTokenExpiry;
+}
+
+function saveGCalToken(token, expiresIn) {
+  gcalAccessToken = token;
+  gcalTokenExpiry = Date.now() + (expiresIn - 60) * 1000;
+  try { localStorage.setItem('jl_gcal_token', JSON.stringify({ token, expiry: gcalTokenExpiry })); } catch(e) {}
+}
+
+function loadGCalToken() {
+  try {
+    const raw = JSON.parse(localStorage.getItem('jl_gcal_token') || 'null');
+    if (raw && raw.expiry > Date.now()) { gcalAccessToken = raw.token; gcalTokenExpiry = raw.expiry; return true; }
+  } catch(e) {}
+  return false;
+}
+
+function signInGCal() {
+  const params = new URLSearchParams({
+    client_id: CFG.GCAL_OAUTH_CLIENT,
+    redirect_uri: window.location.href.split('?')[0].split('#')[0],
+    response_type: 'token',
+    scope: 'https://www.googleapis.com/auth/calendar.readonly',
+    prompt: 'consent'
+  });
+  window.location.href = 'https://accounts.google.com/o/oauth2/v2/auth?' + params.toString();
+}
+
+function signOutGCal() {
+  gcalAccessToken = null; gcalTokenExpiry = 0;
+  try { localStorage.removeItem('jl_gcal_token'); } catch(e) {}
+  render();
+}
+
+// Handle OAuth redirect — token comes back in URL hash
+function handleOAuthRedirect() {
+  const hash = window.location.hash.substring(1);
+  if (!hash) { loadGCalToken(); return; }
+  const params = new URLSearchParams(hash);
+  const token = params.get('access_token');
+  const expiresIn = parseInt(params.get('expires_in') || '3600');
+  if (token) {
+    saveGCalToken(token, expiresIn);
+    // Clean URL
+    history.replaceState(null, '', window.location.pathname);
+  } else {
+    loadGCalToken();
+  }
+}
 
 // ════════════════════════════════════════════════════════════════
 //  CONSTANTS
@@ -511,8 +567,8 @@ function weekNum(d) {
 }
 function fmt(d) { return `${DAY_FULL[d.getDay()]} ${d.getDate()} ${MON_S[d.getMonth()]}`; }
 function fmtShort(d) { return `${d.getDate()} ${MON_S[d.getMonth()]}`; }
-function shiftDay(n) { renderLock = false; viewDate = new Date(viewDate.getTime() + n*86400000); render(); }
-function shiftWeek(n) { renderLock = false; viewDate = new Date(viewDate.getTime() + n*7*86400000); render(); }
+function shiftDay(n) { viewDate = new Date(viewDate.getTime() + n*86400000); render(); }
+function shiftWeek(n) { viewDate = new Date(viewDate.getTime() + n*7*86400000); render(); }
 
 function getWeekdays(d) {
   const dow = d.getDay();
@@ -582,6 +638,7 @@ function calcConsistency() {
 //  MOMENTUM (last 3 weekdays)
 // ════════════════════════════════════════════════════════════════
 function calcMomentum() {
+  // Not enough plan history yet — plan hasn't started
   if (!inPlan(todayD()) && todayD() < CFG.PLAN_START) {
     return { color:'var(--blue)', bg:'var(--blue-lt)', border:'#BBDEFB', label:'Plan starts 18 May 2026. Momentum tracking begins then.' };
   }
@@ -594,6 +651,7 @@ function calcMomentum() {
         const t=loadTicks(d);
         days.push((t.study?1:0)+(t.biz?1:0)+(t.ex?1:0));
       } else if (d < CFG.PLAN_START) {
+        // Ran out of plan days — pad with zeros
         days.push(0);
       }
     }
@@ -609,6 +667,8 @@ function calcMomentum() {
 // ════════════════════════════════════════════════════════════════
 //  GOOGLE SHEETS — fetch all tabs
 // ════════════════════════════════════════════════════════════════
+
+// Fetch with a hard timeout — never hang more than 5 seconds
 function fetchWithTimeout(url, ms=5000) {
   return Promise.race([
     fetch(url),
@@ -623,11 +683,8 @@ async function fetchSheet(tab) {
   try {
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${CFG.SHEET_ID}/values/${encodeURIComponent(tab)}?key=${CFG.SHEETS_API_KEY}`;
     const r = await fetchWithTimeout(url);
-    if (!r.ok) {
-      console.warn('Sheet fetch failed:', tab, r.status);
-      return null;
-    }
-    const data = await r.json().catch(() => ({}));
+    if (!r.ok) return null;
+    const data = await r.json();
     SESSION[cacheKey] = data.values || [];
     return SESSION[cacheKey];
   } catch(e) { return null; }
@@ -635,11 +692,10 @@ async function fetchSheet(tab) {
 
 // Parse Schedule tab: cols = Week, Course, Focus, Biz, Phase, PhaseTag, PhaseBg, PhaseFg
 async function getScheduleWeek(wn) {
-  const safeWn = Math.min(Math.max(wn || 1, 1), 16);
   const rows = await fetchSheet('Schedule');
-  if (!rows) return FALLBACK_SCHEDULE[safeWn] || FALLBACK_SCHEDULE[1];
-  const row = rows.find(r => parseInt(r[0]) === safeWn);
-  if (!row) return FALLBACK_SCHEDULE[safeWn] || FALLBACK_SCHEDULE[1];
+  if (!rows) return FALLBACK_SCHEDULE[wn] || FALLBACK_SCHEDULE[16];
+  const row = rows.find(r => parseInt(r[0]) === wn);
+  if (!row) return FALLBACK_SCHEDULE[wn] || FALLBACK_SCHEDULE[16];
   return { course:row[1]||'', focus:row[2]||'', biz:row[3]||'', phase:row[4]||'', phaseTag:row[5]||'', phaseBg:row[6]||'#D6E4F0', phaseFg:row[7]||'#1B4F72' };
 }
 
@@ -696,26 +752,31 @@ async function getAppleCalendar() {
 }
 
 // ════════════════════════════════════════════════════════════════
-//  GOOGLE CALENDAR
+//  GOOGLE CALENDAR — OAuth
 // ════════════════════════════════════════════════════════════════
 async function fetchGCal() {
-  if (!IS_CONFIGURED || !CFG.GCAL_API_KEY || !CFG.GCAL_CALENDAR_ID) return null;
+  if (!isGCalAuthed()) return null;
   try {
     const d = new Date(viewDate);
     const tMin = new Date(d); tMin.setHours(0,0,0,0);
     const tMax = new Date(d); tMax.setHours(23,59,59,999);
     const calId = encodeURIComponent(CFG.GCAL_CALENDAR_ID);
-    const url = `https://www.googleapis.com/calendar/v3/calendars/${calId}/events?key=${CFG.GCAL_API_KEY}&timeMin=${tMin.toISOString()}&timeMax=${tMax.toISOString()}&singleEvents=true&orderBy=startTime&maxResults=10`;
-    const r = await fetchWithTimeout(url, 4000);
-    if (!r || !r.ok) return [];
+    const url = `https://www.googleapis.com/calendar/v3/calendars/${calId}/events?timeMin=${tMin.toISOString()}&timeMax=${tMax.toISOString()}&singleEvents=true&orderBy=startTime&maxResults=20`;
+    const r = await Promise.race([
+      fetch(url, { headers: { Authorization: `Bearer ${gcalAccessToken}` } }),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 5000))
+    ]);
+    if (!r || !r.ok) {
+      if (r && r.status === 401) signOutGCal();
+      return [];
+    }
     const data = await r.json().catch(() => ({}));
-    const items = data.items || [];
-    return items.map(ev => {
+    return (data.items || []).map(ev => {
       try {
         const start = ev.start && ev.start.dateTime ? new Date(ev.start.dateTime) : null;
-        const time = start ? start.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}) : 'All day';
+        const time = start ? start.toLocaleTimeString('en-GB', {hour:'2-digit', minute:'2-digit'}) : 'All day';
         return { time, title: ev.summary || '(no title)' };
-      } catch(e) { return { time: '', title: ev.summary || '(no title)' }; }
+      } catch(e) { return { time:'', title: ev.summary || '(no title)' }; }
     });
   } catch(e) { return []; }
 }
@@ -742,27 +803,29 @@ function updateHeader() {
 }
 
 async function render() {
+  // If already rendering, queue the latest tab and return
   if (renderLock) { pendingTab = activeTab; return; }
   renderLock = true;
-  console.log('render start, tab:', activeTab, 'date:', viewDate.toISOString());
   updateHeader();
   const main = document.getElementById('main');
+  // Show skeleton while loading
   main.style.opacity = '0.5';
   try {
     let html = '';
     if (activeTab==='today') html = await renderToday();
     else if (activeTab==='week') html = await renderWeek();
     else html = await renderLaunch();
+    // Only update if tab hasn't changed mid-render
     main.innerHTML = html;
   } catch(e) {
-    console.error('render error:', e, e.stack);
     main.innerHTML = `<div style="padding:24px;text-align:center;color:#888;font-size:14px;">
-      Error: ${e.message}<br><br>
-      <button onclick="renderLock=false;render()" style="padding:8px 20px;background:#1C2B3A;color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer;">Retry</button>
+      Something went wrong loading this view.<br><br>
+      <button onclick="render()" style="padding:8px 20px;background:#1C2B3A;color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer;">Retry</button>
     </div>`;
   } finally {
     main.style.opacity = '1';
     renderLock = false;
+    // If a tab switch was queued while rendering, run it now
     if (pendingTab && pendingTab !== activeTab) {
       const next = pendingTab;
       pendingTab = null;
@@ -775,6 +838,7 @@ async function render() {
   }
 }
 
+// ── CHECK CIRCLE HTML ─────────────────────────────────────────
 function chkHtml(on) {
   return `<div class="chk ${on?'on':''}">
     ${on?`<svg width="12" height="12" viewBox="0 0 12 12" fill="none">
@@ -800,7 +864,7 @@ async function renderToday() {
   const dow = d.getDay();
   const isWkend = dow===0||dow===6;
   const wn = weekNum(d);
-  const wd = await getScheduleWeek(wn).catch(() => FALLBACK_SCHEDULE[Math.min(Math.max(wn||1,1),16)]);
+  const wd = await getScheduleWeek(wn);
   const ticks = loadTicks(d);
   const inP = inPlan(d);
 
@@ -926,23 +990,28 @@ async function renderToday() {
 }
 
 async function loadCalendars() {
-  // Work calendar
+  // Work calendar — OAuth
   const gcalBlock = document.getElementById('gcal-block');
   if (gcalBlock) {
-    if (!IS_CONFIGURED) {
-      gcalBlock.querySelector('.cal-loading').outerHTML = `<div class="cal-empty">Set up Google Calendar API to see work events here.</div>`;
-    } else {
-      const events = await fetchGCal();
-      const inner = gcalBlock.querySelector('.cal-loading');
-      if (!inner) return;
-      if (!events || events.length===0) {
-        inner.outerHTML = `<div class="cal-empty">No events today.</div>`;
-      } else if (!Array.isArray(events)) {
-        inner.outerHTML = `<div class="cal-empty">Calendar unavailable.</div>`;
+    const inner = gcalBlock.querySelector('.cal-loading');
+    if (inner) {
+      if (!isGCalAuthed()) {
+        inner.outerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+          <div class="cal-empty" style="font-style:normal;">Connect to see today's work events</div>
+          <button onclick="signInGCal()" style="padding:6px 14px;background:var(--red);color:white;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;">Connect</button>
+        </div>`;
       } else {
-        inner.outerHTML = events.map(ev =>
-          `<div class="cal-event"><div class="cal-event-time">${ev.time}</div><div class="cal-event-name">${ev.title}</div></div>`
-        ).join('');
+        const events = await fetchGCal();
+        if (!events || !Array.isArray(events) || events.length === 0) {
+          inner.outerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;">
+            <div class="cal-empty">No events today.</div>
+            <button onclick="signOutGCal()" style="background:none;border:none;font-size:11px;color:#ccc;cursor:pointer;">Disconnect</button>
+          </div>`;
+        } else {
+          inner.outerHTML = events.map(ev =>
+            `<div class="cal-event"><div class="cal-event-time">${ev.time}</div><div class="cal-event-name">${ev.title}</div></div>`
+          ).join('') + `<div style="text-align:right;margin-top:4px;"><button onclick="signOutGCal()" style="background:none;border:none;font-size:11px;color:#ccc;cursor:pointer;">Disconnect</button></div>`;
+        }
       }
     }
   }
@@ -950,22 +1019,23 @@ async function loadCalendars() {
   // Personal/Family calendar
   const acalBlock = document.getElementById('acal-block');
   if (acalBlock) {
-    if (!IS_CONFIGURED) {
-      acalBlock.querySelector('.cal-loading').outerHTML = `<div class="cal-empty">Set up the iOS Shortcut to push Apple Calendar events here.</div><div class="cal-error-note">See the Wiring Guide for setup instructions.</div>`;
-    } else {
-      const text = await getAppleCalendar();
-      const inner = acalBlock.querySelector('.cal-loading');
-      if (!inner) return;
-      if (!text) {
-        inner.outerHTML = `<div class="cal-empty">No events pushed today. Run the morning iOS Shortcut to populate this.</div>`;
+    const inner = acalBlock.querySelector('.cal-loading');
+    if (inner) {
+      if (!IS_CONFIGURED) {
+        inner.outerHTML = `<div class="cal-empty">Set up the iOS Shortcut to push Apple Calendar events here.</div>`;
       } else {
-        // text is a pre-formatted string: "HH:MM Title\nHH:MM Title"
-        const lines = text.split('\n').filter(Boolean);
-        inner.outerHTML = lines.map(line => {
-          const parts = line.match(/^(\d{2}:\d{2})\s+(.+)$/);
-          if (parts) return `<div class="cal-event"><div class="cal-event-time">${parts[1]}</div><div class="cal-event-name">${parts[2]}</div></div>`;
-          return `<div class="cal-event"><div class="cal-event-time"></div><div class="cal-event-name">${line}</div></div>`;
-        }).join('');
+        let text = null;
+        try { text = await getAppleCalendar(); } catch(e) {}
+        if (!text) {
+          inner.outerHTML = `<div class="cal-empty">No events pushed today. Run the morning iOS Shortcut to populate this.</div>`;
+        } else {
+          const lines = text.split('\n').filter(Boolean);
+          inner.outerHTML = lines.map(line => {
+            const parts = line.match(/^(\d{2}:\d{2})\s+(.+)$/);
+            if (parts) return `<div class="cal-event"><div class="cal-event-time">${parts[1]}</div><div class="cal-event-name">${parts[2]}</div></div>`;
+            return `<div class="cal-event"><div class="cal-event-time"></div><div class="cal-event-name">${line}</div></div>`;
+          }).join('');
+        }
       }
     }
   }
@@ -1202,6 +1272,7 @@ async function renderLaunch() {
 // ════════════════════════════════════════════════════════════════
 //  INIT
 // ════════════════════════════════════════════════════════════════
+handleOAuthRedirect();
 render();
 </script>
 </body>
