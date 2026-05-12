@@ -992,7 +992,7 @@ async function renderToday() {
       <div class="card-body">
         <div class="card-tag" style="color:var(--blue);">Study · 09:00 – 13:00</div>
         <div class="card-title">${wd.course}</div>
-        <div class="card-desc">${wd.focus}</div>
+        <div class="card-desc">${wd.focus.split('.').map(s=>s.trim()).filter(Boolean).map(s=>'– '+s).join('<br>')}</div>
       </div>
     </div>
     <div class="card-foot">
@@ -1007,7 +1007,7 @@ async function renderToday() {
       <div class="card-body">
         <div class="card-tag" style="color:var(--red);">Red Thread · 13:00 – 16:30</div>
         <div class="card-title">Business build tasks</div>
-        <div class="card-desc">${wd.biz}</div>
+        <div class="card-desc">${wd.biz.split('.').map(s=>s.trim()).filter(Boolean).map(s=>'– '+s).join('<br>')}</div>
       </div>
     </div>
   </div>`;
