@@ -698,19 +698,23 @@ async function getAppleCalendar() {
 async function fetchGCal() {
   if (!IS_CONFIGURED || !CFG.GCAL_API_KEY || !CFG.GCAL_CALENDAR_ID) return null;
   try {
-    const d = viewDate;
+    const d = new Date(viewDate);
     const tMin = new Date(d); tMin.setHours(0,0,0,0);
     const tMax = new Date(d); tMax.setHours(23,59,59,999);
-    const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(CFG.GCAL_CALENDAR_ID)}/events?key=${CFG.GCAL_API_KEY}&timeMin=${tMin.toISOString()}&timeMax=${tMax.toISOString()}&singleEvents=true&orderBy=startTime&maxResults=10`;
-    const r = await fetch(url);
-    if (!r.ok) return null;
-    const data = await r.json();
-    return (data.items||[]).map(ev => {
-      const start = ev.start.dateTime ? new Date(ev.start.dateTime) : null;
-      const time = start ? start.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}) : 'All day';
-      return { time, title: ev.summary||'(no title)' };
+    const calId = encodeURIComponent(CFG.GCAL_CALENDAR_ID);
+    const url = `https://www.googleapis.com/calendar/v3/calendars/${calId}/events?key=${CFG.GCAL_API_KEY}&timeMin=${tMin.toISOString()}&timeMax=${tMax.toISOString()}&singleEvents=true&orderBy=startTime&maxResults=10`;
+    const r = await fetchWithTimeout(url, 4000);
+    if (!r || !r.ok) return [];
+    const data = await r.json().catch(() => ({}));
+    const items = data.items || [];
+    return items.map(ev => {
+      try {
+        const start = ev.start && ev.start.dateTime ? new Date(ev.start.dateTime) : null;
+        const time = start ? start.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}) : 'All day';
+        return { time, title: ev.summary || '(no title)' };
+      } catch(e) { return { time: '', title: ev.summary || '(no title)' }; }
     });
-  } catch(e) { return null; }
+  } catch(e) { return []; }
 }
 
 // ════════════════════════════════════════════════════════════════
@@ -920,6 +924,8 @@ async function loadCalendars() {
       if (!inner) return;
       if (!events || events.length===0) {
         inner.outerHTML = `<div class="cal-empty">No events today.</div>`;
+      } else if (!Array.isArray(events)) {
+        inner.outerHTML = `<div class="cal-empty">Calendar unavailable.</div>`;
       } else {
         inner.outerHTML = events.map(ev =>
           `<div class="cal-event"><div class="cal-event-time">${ev.time}</div><div class="cal-event-name">${ev.title}</div></div>`
