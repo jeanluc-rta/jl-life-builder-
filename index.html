@@ -692,7 +692,7 @@ function calcConsistency() {
 function calcMomentum() {
   // Not enough plan history yet — plan hasn't started
   if (!inPlan(todayD()) && todayD() < CFG.PLAN_START) {
-    return { color:'var(--blue)', bg:'var(--blue-lt)', border:'#BBDEFB', label:'Plan starts 18 May 2026. Momentum tracking begins then.' };
+    return { color:'var(--blue)', bg:'var(--blue-lt)', border:'#BBDEFB', label:'Plan starts 12 May 2026. Momentum tracking begins then.' };
   }
   let days=[], d=new Date(todayD()), safety=0;
   while (days.length<3 && safety<60) {
@@ -927,14 +927,14 @@ async function renderToday() {
     <button class="nav-btn" onclick="shiftDay(-1)">‹</button>
     <div class="date-c">
       <div class="date-main">${fmt(d)}${isToday(d)?' <span style="color:var(--green);font-size:13px;font-weight:400;">· Today</span>':''}</div>
-      <div class="date-sub">${inP?`Week ${wn} of 16 · ${wd.phase}`:(d<CFG.PLAN_START?'Before plan start · 18 May 2026':'Plan complete')}</div>
+      <div class="date-sub">${inP?`Week ${wn} of 16 · ${wd.phase}`:(d<CFG.PLAN_START?'Before plan start · 12 May 2026':'Plan complete')}</div>
     </div>
     <button class="nav-btn" onclick="shiftDay(1)">›</button>
   </div>`;
 
   if (!inP) {
     h += `<div class="hero"><div class="hero-emoji">${d<CFG.PLAN_START?'⏳':'🎓'}</div>
-      <div class="hero-title">${d<CFG.PLAN_START?'Plan starts 18 May 2026':'16 Weeks Complete'}</div>
+      <div class="hero-title">${d<CFG.PLAN_START?'Plan starts 12 May 2026':'16 Weeks Complete'}</div>
       <div class="hero-body">${d<CFG.PLAN_START?'Navigate forward to see your first study week.':'The Coursera stack is done. Imperial next. Red Thread is live.'}</div></div>`;
     return h;
   }
