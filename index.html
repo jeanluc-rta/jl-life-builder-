@@ -408,6 +408,7 @@ const CFG = {
   GCAL_CALENDAR_ID:  'jeanluc@redthreadadvisory.co.uk',
   GCAL_OAUTH_CLIENT: '885928804664-09u7bikk7mjgvkuv4u3dkfhjlf6jtbuq.apps.googleusercontent.com',
   APPS_SCRIPT_URL:   'https://script.google.com/macros/s/AKfycby8isTODtU4oNtG9keUdPRmjVcVBYZyte1h1emKJFA4pRXN75o-SBkCvPqDRj0jyzGv/exec',
+  APPS_SCRIPT_SECRET: 'f5jls3940280jfghrlmQ',
   PLAN_START:        new Date(2026, 4, 12),
 };
 
@@ -608,7 +609,7 @@ async function syncTicksToSheet(d, obj) {
     await fetch(CFG.APPS_SCRIPT_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'save_ticks', date: dateStr(d), study: obj.study ? 1 : 0, biz: obj.biz ? 1 : 0, ex: obj.ex ? 1 : 0 })
+      body: JSON.stringify({ action: 'save_ticks', secret: CFG.APPS_SCRIPT_SECRET, date: dateStr(d), study: obj.study ? 1 : 0, biz: obj.biz ? 1 : 0, ex: obj.ex ? 1 : 0 })
     });
   } catch(e) {}
 }
@@ -765,7 +766,7 @@ async function saveIntention(wn, text) {
   try {
     await fetch(CFG.APPS_SCRIPT_URL, {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ action:'intention', week:wn, text })
+      body: JSON.stringify({ action:'intention', secret: CFG.APPS_SCRIPT_SECRET, week:wn, text })
     });
     delete SESSION['sheet_WeeklyIntention'];
     return true;
