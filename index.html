@@ -511,8 +511,8 @@ function weekNum(d) {
 }
 function fmt(d) { return `${DAY_FULL[d.getDay()]} ${d.getDate()} ${MON_S[d.getMonth()]}`; }
 function fmtShort(d) { return `${d.getDate()} ${MON_S[d.getMonth()]}`; }
-function shiftDay(n) { viewDate = new Date(viewDate.getTime() + n*86400000); render(); }
-function shiftWeek(n) { viewDate = new Date(viewDate.getTime() + n*7*86400000); render(); }
+function shiftDay(n) { renderLock = false; viewDate = new Date(viewDate.getTime() + n*86400000); render(); }
+function shiftWeek(n) { renderLock = false; viewDate = new Date(viewDate.getTime() + n*7*86400000); render(); }
 
 function getWeekdays(d) {
   const dow = d.getDay();
@@ -632,10 +632,11 @@ async function fetchSheet(tab) {
 
 // Parse Schedule tab: cols = Week, Course, Focus, Biz, Phase, PhaseTag, PhaseBg, PhaseFg
 async function getScheduleWeek(wn) {
+  const safeWn = Math.min(Math.max(wn || 1, 1), 16);
   const rows = await fetchSheet('Schedule');
-  if (!rows) return FALLBACK_SCHEDULE[wn] || FALLBACK_SCHEDULE[16];
-  const row = rows.find(r => parseInt(r[0]) === wn);
-  if (!row) return FALLBACK_SCHEDULE[wn] || FALLBACK_SCHEDULE[16];
+  if (!rows) return FALLBACK_SCHEDULE[safeWn] || FALLBACK_SCHEDULE[1];
+  const row = rows.find(r => parseInt(r[0]) === safeWn);
+  if (!row) return FALLBACK_SCHEDULE[safeWn] || FALLBACK_SCHEDULE[1];
   return { course:row[1]||'', focus:row[2]||'', biz:row[3]||'', phase:row[4]||'', phaseTag:row[5]||'', phaseBg:row[6]||'#D6E4F0', phaseFg:row[7]||'#1B4F72' };
 }
 
@@ -748,7 +749,7 @@ async function render() {
   } catch(e) {
     main.innerHTML = `<div style="padding:24px;text-align:center;color:#888;font-size:14px;">
       Something went wrong loading this view.<br><br>
-      <button onclick="render()" style="padding:8px 20px;background:#1C2B3A;color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer;">Retry</button>
+      <button onclick="renderLock=false;render()" style="padding:8px 20px;background:#1C2B3A;color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer;">Retry</button>
     </div>`;
   } finally {
     main.style.opacity = '1';
