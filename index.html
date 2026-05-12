@@ -1,0 +1,1152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>JL · Life Builder</title>
+<style>
+/* ── RESET & ROOT ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+:root {
+  --ink:       #0F0F0F;
+  --ink2:      #444;
+  --ink3:      #888;
+  --border:    #E5E5E5;
+  --bg:        #F2F2F2;
+  --white:     #FFFFFF;
+  --red:       #C0392B;
+  --red-lt:    #FDECEA;
+  --blue:      #1A56A0;
+  --blue-lt:   #E8F0FB;
+  --green:     #1A7A34;
+  --green-lt:  #E6F5EA;
+  --amber:     #B85C00;
+  --amber-lt:  #FEF3E2;
+  --purple:    #6B21A8;
+  --purple-lt: #F3E8FF;
+  --slate:     #1C2B3A;
+  --radius:    12px;
+  --shadow:    0 1px 3px rgba(0,0,0,.08);
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  min-height: 100vh;
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+/* ── HEADER ── */
+.hdr {
+  background: var(--slate);
+  padding: 20px 20px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+.hdr-name { color: #fff; font-size: 20px; font-weight: 700; letter-spacing: -.3px; }
+.hdr-sub  { color: #5a7a94; font-size: 12px; margin-top: 2px; }
+.hdr-right { text-align: right; }
+.hdr-date { color: #ccc; font-size: 13px; font-weight: 500; }
+.hdr-week { color: #5a7a94; font-size: 11px; margin-top: 3px; }
+
+/* ── TABS ── */
+.tabs {
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  position: sticky; top: 0; z-index: 50;
+}
+.tab {
+  flex: 1; padding: 13px 4px;
+  text-align: center; font-size: 12px; font-weight: 500;
+  color: var(--ink3); cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all .15s; user-select: none;
+  letter-spacing: .1px;
+}
+.tab.on { color: var(--blue); border-bottom-color: var(--blue); font-weight: 700; }
+
+/* ── MAIN SCROLL AREA ── */
+.main { padding: 16px; }
+
+/* ── SECTION LABEL ── */
+.sec-label {
+  font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 1px;
+  color: var(--ink3); margin: 18px 0 8px;
+}
+.sec-label:first-child { margin-top: 0; }
+
+/* ── CARD ── */
+.card {
+  background: var(--white);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  margin-bottom: 10px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  transition: opacity .2s;
+}
+.card.ticked { opacity: .45; }
+.card-row {
+  display: flex; align-items: flex-start;
+  padding: 14px 16px; gap: 13px;
+  cursor: pointer; user-select: none;
+}
+.card-row:active { background: #FAFAFA; }
+.chk {
+  width: 24px; height: 24px; border-radius: 50%;
+  border: 2px solid var(--border); flex-shrink: 0;
+  margin-top: 1px; display: flex;
+  align-items: center; justify-content: center;
+  transition: all .18s; background: var(--white);
+}
+.chk.on { background: var(--green); border-color: var(--green); }
+.card-body { flex: 1; min-width: 0; }
+.card-tag {
+  font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .8px; margin-bottom: 4px;
+}
+.card-title { font-size: 15px; font-weight: 600; line-height: 1.3; }
+.card.ticked .card-title { color: #aaa; text-decoration: line-through; }
+.card-desc { font-size: 13px; color: var(--ink2); margin-top: 5px; line-height: 1.5; }
+.card.ticked .card-desc { color: #bbb; }
+.card-foot {
+  border-top: 1px solid var(--border);
+  padding: 11px 16px; background: var(--blue-lt);
+}
+.card-foot-label { font-size: 11px; font-weight: 700; color: var(--blue); margin-bottom: 3px; text-transform: uppercase; letter-spacing: .5px; }
+.card-foot-body  { font-size: 13px; color: var(--ink2); line-height: 1.45; }
+
+/* ── CALENDAR CARDS ── */
+.cal-card {
+  background: var(--white);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  margin-bottom: 10px;
+  padding: 14px 16px;
+  box-shadow: var(--shadow);
+}
+.cal-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.cal-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.cal-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; }
+.cal-event {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 6px 0; border-bottom: 1px solid var(--border);
+}
+.cal-event:last-child { border-bottom: none; }
+.cal-event-time { font-size: 11px; color: var(--ink3); width: 72px; flex-shrink: 0; padding-top: 2px; font-variant-numeric: tabular-nums; }
+.cal-event-name { font-size: 13px; font-weight: 500; line-height: 1.35; }
+.cal-empty { font-size: 13px; color: var(--ink3); font-style: italic; }
+.cal-loading { font-size: 13px; color: var(--ink3); display: flex; align-items: center; gap: 6px; }
+.cal-error-note { font-size: 11px; color: var(--ink3); margin-top: 6px; }
+
+/* ── HERO / WEEKEND ── */
+.hero {
+  background: var(--white); border: 1px solid var(--border);
+  border-radius: 16px; padding: 28px 20px; text-align: center;
+  box-shadow: var(--shadow);
+}
+.hero-emoji { font-size: 48px; margin-bottom: 12px; }
+.hero-title { font-size: 19px; font-weight: 700; margin-bottom: 6px; }
+.hero-body  { font-size: 14px; color: var(--ink2); line-height: 1.6; }
+
+/* ── PHASE PILL ── */
+.pill {
+  display: inline-flex; align-items: center;
+  padding: 5px 13px; border-radius: 14px;
+  font-size: 11px; font-weight: 600; letter-spacing: .3px;
+  margin-bottom: 14px;
+}
+
+/* ── DATE NAV ── */
+.date-nav {
+  display: flex; align-items: center;
+  justify-content: space-between; margin-bottom: 16px;
+}
+.nav-btn {
+  width: 36px; height: 36px; border-radius: 50%;
+  border: 1px solid var(--border); background: var(--white);
+  font-size: 18px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--ink2); user-select: none; box-shadow: var(--shadow);
+}
+.nav-btn:active { background: var(--bg); }
+.date-c { text-align: center; }
+.date-main { font-size: 16px; font-weight: 600; }
+.date-sub  { font-size: 11px; color: var(--ink3); margin-top: 3px; }
+
+/* ── WEEK REVIEW ── */
+.streak-card {
+  background: var(--slate); border-radius: 16px;
+  padding: 22px 20px; margin-bottom: 10px;
+  display: flex; align-items: center; gap: 20px;
+  box-shadow: var(--shadow);
+}
+.streak-num { font-size: 60px; font-weight: 800; color: #fff; line-height: 1; }
+.streak-label { font-size: 15px; font-weight: 600; color: #fff; }
+.streak-sub   { font-size: 12px; color: #5a7a94; margin-top: 3px; }
+.streak-icon  { font-size: 28px; margin-top: 8px; }
+
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+.stat-card {
+  background: var(--white); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px 14px; box-shadow: var(--shadow);
+}
+.stat-num   { font-size: 36px; font-weight: 800; line-height: 1; margin-bottom: 4px; }
+.stat-denom { font-size: 18px; font-weight: 400; color: #bbb; }
+.stat-label { font-size: 12px; color: var(--ink3); line-height: 1.35; }
+.mini-bar-bg   { background: var(--border); border-radius: 3px; height: 5px; margin-top: 10px; }
+.mini-bar-fill { border-radius: 3px; height: 5px; transition: width .5s; }
+
+/* 16-week arc */
+.arc-card {
+  background: var(--white); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px; box-shadow: var(--shadow);
+}
+.arc-title { font-size: 13px; font-weight: 600; color: var(--ink2); margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+.arc-pct   { font-size: 13px; font-weight: 700; color: var(--blue); }
+.arc-weeks { display: flex; gap: 3px; flex-wrap: wrap; }
+.arc-wk {
+  width: 24px; height: 24px; border-radius: 5px;
+  font-size: 9px; font-weight: 600; color: var(--ink3);
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg); border: 1px solid var(--border);
+  transition: all .2s;
+}
+.arc-wk.done    { background: var(--blue); color: #fff; border-color: var(--blue); }
+.arc-wk.current { background: var(--amber); color: #fff; border-color: var(--amber); }
+
+/* Momentum */
+.momentum-card {
+  border-radius: var(--radius); padding: 14px 16px;
+  margin-bottom: 10px; border: 1px solid; box-shadow: var(--shadow);
+  display: flex; align-items: center; gap: 12px;
+}
+.momentum-dot { width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; }
+.momentum-text { font-size: 13px; font-weight: 500; }
+
+/* Consistency */
+.consist-card {
+  background: var(--white); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px; box-shadow: var(--shadow);
+}
+.consist-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.consist-label { font-size: 13px; font-weight: 500; color: var(--ink2); }
+.consist-pct   { font-size: 13px; font-weight: 700; }
+
+/* Intention */
+.intention-card {
+  background: var(--white); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px; box-shadow: var(--shadow);
+}
+.intention-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--ink3); margin-bottom: 8px; }
+.intention-text  { font-size: 15px; color: var(--ink); line-height: 1.5; font-style: italic; }
+.intention-empty { font-size: 13px; color: var(--ink3); font-style: italic; }
+.intention-input {
+  width: 100%; border: 1px solid var(--border); border-radius: 8px;
+  padding: 10px 12px; font-size: 14px; font-family: inherit;
+  color: var(--ink); resize: none; margin-top: 8px;
+  background: var(--bg);
+}
+.intention-input:focus { outline: none; border-color: var(--blue); background: var(--white); }
+.btn-save {
+  margin-top: 8px; padding: 9px 20px;
+  background: var(--blue); color: #fff;
+  border: none; border-radius: 8px;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.btn-save:active { opacity: .8; }
+.btn-edit {
+  font-size: 12px; color: var(--blue);
+  background: none; border: none; cursor: pointer;
+  padding: 0; font-weight: 500;
+}
+
+/* Day grid */
+.day-grid {
+  background: var(--white); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px 16px;
+  margin-bottom: 10px; box-shadow: var(--shadow);
+}
+.day-grid-title { font-size: 13px; font-weight: 600; color: var(--ink2); margin-bottom: 10px; }
+.day-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--border); }
+.day-row:last-child { border-bottom: none; }
+.day-name { font-size: 13px; font-weight: 500; width: 36px; color: var(--ink2); flex-shrink: 0; }
+.day-dots { display: flex; gap: 7px; flex: 1; }
+.dot {
+  width: 24px; height: 24px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700; color: #fff;
+}
+.dot-s { background: var(--blue); }
+.dot-b { background: var(--red); }
+.dot-e { background: var(--green); }
+.dot-x { background: var(--border); }
+.dot-legend { display: flex; gap: 14px; margin-top: 11px; flex-wrap: wrap; }
+.dot-leg { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--ink3); }
+.dot-leg-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+/* Milestones */
+.milestone {
+  background: var(--white); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px 16px;
+  margin-bottom: 8px; display: flex; align-items: flex-start;
+  gap: 12px; box-shadow: var(--shadow);
+}
+.milestone.locked { opacity: .4; }
+.milestone-icon { font-size: 22px; flex-shrink: 0; }
+.milestone-title { font-size: 14px; font-weight: 600; }
+.milestone-sub   { font-size: 12px; color: var(--ink3); margin-top: 2px; }
+.milestone-badge {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .5px; padding: 2px 8px; border-radius: 10px;
+  margin-top: 5px; display: inline-block;
+}
+
+/* ── LAUNCH PROJECT ── */
+.launch-progress {
+  background: var(--white); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 16px; box-shadow: var(--shadow);
+}
+.launch-progress-header { display: flex; justify-content: space-between; margin-bottom: 10px; }
+.launch-progress-title  { font-size: 14px; font-weight: 600; }
+.launch-progress-pct    { font-size: 14px; font-weight: 700; color: var(--red); }
+.prog-bar-bg   { background: var(--border); border-radius: 4px; height: 8px; }
+.prog-bar-fill { background: var(--red); border-radius: 4px; height: 8px; transition: width .5s; }
+.prog-counts   { font-size: 12px; color: var(--ink3); margin-top: 6px; }
+
+.launch-cat { margin-bottom: 18px; }
+.launch-cat-title {
+  font-size: 12px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .8px; color: var(--ink3); margin-bottom: 8px;
+  display: flex; align-items: center; gap: 6px;
+}
+.launch-task {
+  background: var(--white); border: 1px solid var(--border);
+  border-radius: 10px; padding: 12px 14px; margin-bottom: 6px;
+  display: flex; align-items: flex-start; gap: 10px; box-shadow: var(--shadow);
+}
+.launch-task-body { flex: 1; min-width: 0; }
+.launch-task-title { font-size: 14px; font-weight: 500; line-height: 1.3; }
+.launch-task-notes { font-size: 12px; color: var(--ink3); margin-top: 3px; line-height: 1.4; }
+.launch-task-date  { font-size: 11px; color: var(--ink3); margin-top: 4px; }
+.status-badge {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .5px; padding: 3px 8px; border-radius: 8px;
+  flex-shrink: 0; margin-top: 1px; white-space: nowrap;
+}
+.status-todo     { background: var(--bg); color: var(--ink3); border: 1px solid var(--border); }
+.status-progress { background: var(--amber-lt); color: var(--amber); border: 1px solid #F5CBA7; }
+.status-done     { background: var(--green-lt); color: var(--green); border: 1px solid #A9DFBF; }
+
+/* ── SETUP PROMPT ── */
+.setup-card {
+  background: var(--amber-lt); border: 1px solid #F5CBA7;
+  border-radius: var(--radius); padding: 16px; margin-bottom: 16px;
+}
+.setup-title { font-size: 14px; font-weight: 700; color: var(--amber); margin-bottom: 6px; }
+.setup-body  { font-size: 13px; color: var(--ink2); line-height: 1.5; }
+.setup-body code {
+  background: rgba(0,0,0,.06); padding: 1px 5px; border-radius: 4px;
+  font-family: 'SF Mono', Menlo, monospace; font-size: 12px;
+}
+.setup-body a { color: var(--blue); }
+
+/* ── WEEK NAV ── */
+.week-nav { display: flex; align-items: center; justify-content: space-between; margin-top: 4px; }
+.week-nav-btn {
+  padding: 8px 16px; border: 1px solid var(--border);
+  border-radius: 8px; background: var(--white);
+  font-size: 13px; cursor: pointer; color: var(--ink2); box-shadow: var(--shadow);
+}
+
+/* ── MISC ── */
+.reset-wrap { text-align: center; padding: 10px 0 28px; }
+.reset-wrap button { background: none; border: none; font-size: 12px; color: #ccc; cursor: pointer; }
+.spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--border); border-top-color: var(--blue); border-radius: 50%; animation: spin .6s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── RESPONSIVE: MAC ── */
+@media (min-width: 521px) {
+  body { background: #E8E8E8; }
+  .hdr { border-radius: 0; }
+}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div>
+    <div class="hdr-name">JL</div>
+    <div class="hdr-sub">Life Builder</div>
+  </div>
+  <div class="hdr-right">
+    <div class="hdr-date" id="hdrDate"></div>
+    <div class="hdr-week" id="hdrWeek"></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab on"  id="tab-today"   onclick="switchTab('today')">Today</div>
+  <div class="tab"     id="tab-week"    onclick="switchTab('week')">Week Review</div>
+  <div class="tab"     id="tab-launch"  onclick="switchTab('launch')">Launch</div>
+</div>
+
+<div class="main" id="main"></div>
+
+<script>
+// ════════════════════════════════════════════════════════════════
+//  CONFIG — fill these in after Google Sheet + API setup
+// ════════════════════════════════════════════════════════════════
+const CFG = {
+  SHEET_ID:          'YOUR_GOOGLE_SHEET_ID',          // from Sheet URL
+  SHEETS_API_KEY:    'YOUR_GOOGLE_SHEETS_API_KEY',    // from Google Cloud Console
+  GCAL_API_KEY:      'YOUR_GOOGLE_CALENDAR_API_KEY',  // same or separate key
+  GCAL_CALENDAR_ID:  'YOUR_REDTHREAD_CALENDAR_ID',    // e.g. abc123@group.calendar.google.com
+  APPS_SCRIPT_URL:   'YOUR_APPS_SCRIPT_WEBHOOK_URL',  // for Apple Calendar write
+  PLAN_START:        new Date(2026, 4, 18),            // 18 May 2026
+};
+
+// Detect if configured
+const IS_CONFIGURED = CFG.SHEET_ID !== 'YOUR_GOOGLE_SHEET_ID';
+
+// ════════════════════════════════════════════════════════════════
+//  CONSTANTS
+// ════════════════════════════════════════════════════════════════
+const DAY_SHORT = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const DAY_FULL  = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const MON_S     = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+// Fallback data (used when Sheet not configured or offline)
+const FALLBACK_SCHEDULE = {
+  1:  { course:'AI for Business Specialisation (Wharton)', focus:'Modules 1–3: AI strategy, value, and business fundamentals. Watch lectures, take notes. Begin Red Thread vocabulary list.', biz:'File NM01 company name change. File UKIPO trademark application.', phase:'Phase 1 · Strategy Foundation', phaseTag:'Wharton AI Strategy', phaseBg:'#D6E4F0', phaseFg:'#1B4F72' },
+  2:  { course:'AI for Business Specialisation (Wharton)', focus:'Modules 4–6: AI risk, governance, deployment. Complete quizzes. Draft one-page AI strategy primer in your own words.', biz:'Engage accountant — VAT, draw structure, IR35. Open business bank account.', phase:'Phase 1 · Strategy Foundation', phaseTag:'Wharton AI Strategy', phaseBg:'#D6E4F0', phaseFg:'#1B4F72' },
+  3:  { course:'AI for Business Specialisation (Wharton)', focus:'Courses 2–3 of specialisation: applied AI strategy. Work through case studies.', biz:'Obtain PI insurance quotes. Draft IR35 Letter of Engagement template.', phase:'Phase 1 · Strategy Foundation', phaseTag:'Wharton AI Strategy', phaseBg:'#D6E4F0', phaseFg:'#1B4F72' },
+  4:  { course:'AI for Business Specialisation (Wharton) — Capstone', focus:'Complete specialisation capstone. Finalise your one-page AI strategy primer — your first Red Thread-ready output.', biz:'Brief website freelancer. Website build begins.', phase:'Phase 1 · Strategy Foundation', phaseTag:'Wharton AI Strategy', phaseBg:'#D6E4F0', phaseFg:'#1B4F72' },
+  5:  { course:'Prompt Engineering & GenAI Foundations (Coursera)', focus:'Core prompting principles. Build first prompt library entries: interview synthesis, document analysis.', biz:'Website first draft review. PI insurance confirmed in place.', phase:'Phase 2 · Prompting & Consulting', phaseTag:'Prompting + GenAI', phaseBg:'#D6EDD6', phaseFg:'#1E5631' },
+  6:  { course:'Prompt Engineering & GenAI Foundations (Coursera)', focus:'Complete course. Test prompt library against real Red Thread scenarios — Map session prep, summary writing.', biz:'LinkedIn profile draft updated. First informal network conversations begin.', phase:'Phase 2 · Prompting & Consulting', phaseTag:'Prompting + GenAI', phaseBg:'#D6EDD6', phaseFg:'#1E5631' },
+  7:  { course:'Generative AI for Consultants (Coursera / Fractal Analytics)', focus:'Modules 1–3: AI in discovery and briefing. Apply each module directly to your own Diagnose workflow.', biz:'Website final review. Case study outlines drafted (3 anonymised situations).', phase:'Phase 2 · Prompting & Consulting', phaseTag:'Prompting + GenAI', phaseBg:'#D6EDD6', phaseFg:'#1E5631' },
+  8:  { course:'Generative AI for Consultants (Coursera / Fractal Analytics)', focus:'Complete course. Build a full AI-assisted Diagnose workflow prototype. First Field Notes essay drafted.', biz:'First Field Notes essay complete. Network conversations deepening.', phase:'Phase 2 · Prompting & Consulting', phaseTag:'Prompting + GenAI', phaseBg:'#D6EDD6', phaseFg:'#1E5631' },
+  9:  { course:'LSI Advanced Prompt Engineering (begins)', focus:'Prompt structure, reliability, naming conventions. Start rebuilding prompt library to consulting-grade standard.', biz:'All infrastructure complete. Website ready to go live on signal.', phase:'Phase 3 · Advanced Prompting', phaseTag:'LSI Prompt Engineering', phaseBg:'#FDF3DC', phaseFg:'#7D5A0B' },
+  10: { course:'LSI Advanced Prompt Engineering', focus:'Deep output control: structured outputs, chaining, edge cases. Test against Wharton scenarios.', biz:'Pipeline of 2–3 qualified conversations in hand. Rate card confirmed.', phase:'Phase 3 · Advanced Prompting', phaseTag:'LSI Prompt Engineering', phaseBg:'#FDF3DC', phaseFg:'#7D5A0B' },
+  11: { course:'LSI Advanced Prompt Engineering (final modules)', focus:'Complete LSI. Finalise the consulting-grade prompt system. Personal exploration time.', biz:'Target: one Diagnose engagement confirmed or in final discussion.', phase:'Phase 3 · Advanced Prompting', phaseTag:'LSI Prompt Engineering', phaseBg:'#FDF3DC', phaseFg:'#7D5A0B' },
+  12: { course:'Personal AI exploration — no formal course', focus:'Follow your curiosity. Agentic AI, a sector application, a specific tool. No structure required.', biz:'Contracts ready. Pre-launch review complete.', phase:'Phase 3 · Advanced Prompting', phaseTag:'LSI Prompt Engineering', phaseBg:'#FDF3DC', phaseFg:'#7D5A0B' },
+  13: { course:'Consolidation — review all course outputs', focus:'Revisit prompt library, sharpen AI strategy primer, review GenAI for Consultants notes. No new material.', biz:'Red Thread Advisory launch imminent. Final preparation.', phase:'Phase 4 · Consolidation & Prep', phaseTag:'Review + Imperial Planning', phaseBg:'#EAE0F0', phaseFg:'#5B2C6F' },
+  14: { course:'Consolidation continued', focus:'Identify any gaps. Test prompt library against a simulated Map session.', biz:'Launch. First client conversations under Red Thread Advisory name.', phase:'Phase 4 · Consolidation & Prep', phaseTag:'Review + Imperial Planning', phaseBg:'#EAE0F0', phaseFg:'#5B2C6F' },
+  15: { course:'Imperial cohort research + study wind-down', focus:'Research Imperial cohort dates. Begin enrolment process.', biz:'Client pipeline active. Operating rhythm establishing.', phase:'Phase 4 · Consolidation & Prep', phaseTag:'Review + Imperial Planning', phaseBg:'#EAE0F0', phaseFg:'#5B2C6F' },
+  16: { course:'Imperial planning + transition to client mode', focus:'Confirm Imperial enrolment timeline. The 16-week plan is complete — the practice takes over.', biz:'Full transition to Red Thread Advisory operating mode.', phase:'Phase 4 · Consolidation & Prep', phaseTag:'Review + Imperial Planning', phaseBg:'#EAE0F0', phaseFg:'#5B2C6F' },
+};
+
+const FALLBACK_MILESTONES = [
+  { week:4,  icon:'🎓', title:'Wharton complete', desc:'AI for Business Specialisation finished' },
+  { week:4,  icon:'📄', title:'AI strategy primer done', desc:'First Red Thread-ready written output' },
+  { week:6,  icon:'📚', title:'Prompt library started', desc:'First reusable prompts built and tested' },
+  { week:8,  icon:'🧭', title:'GenAI for Consultants done', desc:'Diagnose workflow prototype complete' },
+  { week:8,  icon:'✍️', title:'First Field Notes essay', desc:'Published to website' },
+  { week:11, icon:'⚙️', title:'LSI complete', desc:'Consulting-grade prompt system in place' },
+  { week:14, icon:'🚀', title:'Red Thread launched', desc:'First client under the new name' },
+  { week:16, icon:'🏛️', title:'Imperial enrolled', desc:'Cohort confirmed for 2027' },
+];
+
+const FALLBACK_LAUNCH = [
+  { cat:'Legal & Corporate', tasks:[
+    { title:'File NM01 — company name change to Red Thread Advisory Ltd', status:'To Do', date:'May 2026' },
+    { title:'File UKIPO Class 35 trademark for "Red Thread Advisory"', status:'To Do', date:'May 2026' },
+    { title:'Draft IR35-compliant Letter of Engagement template', status:'To Do', date:'May 2026' },
+  ]},
+  { cat:'Financial', tasks:[
+    { title:'Engage specialist accountant — salary/dividend draw, VAT, IR35', status:'To Do', date:'May 2026' },
+    { title:'Open business bank account under new company name', status:'To Do', date:'May 2026' },
+    { title:'Set up invoicing software (FreeAgent or similar)', status:'To Do', date:'May 2026' },
+    { title:'Obtain professional indemnity insurance quotes', status:'To Do', date:'May 2026' },
+    { title:'Confirm PI insurance in place', status:'To Do', date:'Jun 2026' },
+    { title:'Register for VAT', status:'To Do', date:'Jun 2026' },
+  ]},
+  { cat:'Digital & Brand', tasks:[
+    { title:'Activate redthreadadvisory.co.uk email', status:'To Do', date:'May 2026' },
+    { title:'Brief website freelancer — brand bible and brief ready', status:'To Do', date:'May 2026' },
+    { title:'Website build underway — first draft reviewed', status:'To Do', date:'Jun 2026' },
+    { title:'LinkedIn profile updated to reflect Red Thread Advisory', status:'To Do', date:'Jun 2026' },
+    { title:'Website in final review', status:'To Do', date:'Jul 2026' },
+    { title:'Website live', status:'To Do', date:'Aug 2026' },
+  ]},
+  { cat:'Content & Pipeline', tasks:[
+    { title:'Draft 3 anonymised case study outlines (Diagnose/Operate)', status:'To Do', date:'Jul 2026' },
+    { title:'First Field Notes essay drafted', status:'To Do', date:'Jul 2026' },
+    { title:'First Field Notes essay published', status:'To Do', date:'Aug 2026' },
+    { title:'Pipeline: 2–3 qualified conversations in hand', status:'To Do', date:'Aug 2026' },
+    { title:'Target: one Diagnose engagement confirmed', status:'To Do', date:'Aug 2026' },
+    { title:'Rate card confirmed, contracts ready', status:'To Do', date:'Aug 2026' },
+  ]},
+];
+
+// ════════════════════════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════════════════════════
+let viewDate  = todayD();
+let activeTab = 'today';
+let sheetData = null;   // loaded from Google Sheets
+let gcalEvents = null;  // today's work calendar events
+let editingIntention = false;
+
+// Cache sheet data for session
+const SESSION = {};
+
+// ════════════════════════════════════════════════════════════════
+//  UTILS
+// ════════════════════════════════════════════════════════════════
+function todayD() { const d = new Date(); d.setHours(0,0,0,0); return d; }
+function isToday(d) { return d.getTime() === todayD().getTime(); }
+function inPlan(d) {
+  const end = new Date(CFG.PLAN_START.getTime() + 16*7*86400000);
+  return d >= CFG.PLAN_START && d < end;
+}
+function weekNum(d) {
+  const days = Math.floor((d - CFG.PLAN_START) / 86400000);
+  if (days < 0) return 0;
+  return Math.min(Math.max(Math.floor(days / 7) + 1, 1), 16);
+}
+function fmt(d) { return `${DAY_FULL[d.getDay()]} ${d.getDate()} ${MON_S[d.getMonth()]}`; }
+function fmtShort(d) { return `${d.getDate()} ${MON_S[d.getMonth()]}`; }
+function shiftDay(n) { viewDate = new Date(viewDate.getTime() + n*86400000); render(); }
+function shiftWeek(n) { viewDate = new Date(viewDate.getTime() + n*7*86400000); render(); }
+
+function getWeekdays(d) {
+  const dow = d.getDay();
+  const mon = new Date(d);
+  mon.setDate(d.getDate() - (dow === 0 ? 6 : dow - 1));
+  mon.setHours(0,0,0,0);
+  return Array.from({length:5}, (_,i) => { const dd = new Date(mon); dd.setDate(mon.getDate()+i); return dd; });
+}
+
+// ════════════════════════════════════════════════════════════════
+//  LOCAL STORAGE — daily ticks
+// ════════════════════════════════════════════════════════════════
+function lsKey(d) { return `jl3_${d.getFullYear()}_${d.getMonth()}_${d.getDate()}`; }
+function loadTicks(d) { try { return JSON.parse(localStorage.getItem(lsKey(d))) || {}; } catch(e) { return {}; } }
+function saveTicks(d, obj) { try { localStorage.setItem(lsKey(d), JSON.stringify(obj)); } catch(e) {} }
+
+function toggleTick(field) {
+  const t = loadTicks(viewDate);
+  t[field] = !t[field];
+  saveTicks(viewDate, t);
+  render();
+}
+
+function resetDay() {
+  if (confirm('Reset all ticks for this day?')) { localStorage.removeItem(lsKey(viewDate)); render(); }
+}
+
+// ════════════════════════════════════════════════════════════════
+//  STREAK
+// ════════════════════════════════════════════════════════════════
+function calcStreak() {
+  let streak = 0, d = new Date(todayD());
+  if (!loadTicks(d).ex) d.setDate(d.getDate()-1);
+  for (let i = 0; i < 400; i++) {
+    const dow = d.getDay();
+    if (dow===0||dow===6) { d.setDate(d.getDate()-1); continue; }
+    if (!loadTicks(d).ex) break;
+    streak++;
+    d.setDate(d.getDate()-1);
+  }
+  return streak;
+}
+
+// ════════════════════════════════════════════════════════════════
+//  CONSISTENCY (study + biz across whole plan so far)
+// ════════════════════════════════════════════════════════════════
+function calcConsistency() {
+  let studyDone=0, bizDone=0, total=0;
+  let d = new Date(CFG.PLAN_START);
+  const now = todayD();
+  while (d <= now && inPlan(d)) {
+    const dow = d.getDay();
+    if (dow!==0 && dow!==6) {
+      total++;
+      const t = loadTicks(d);
+      if (t.study) studyDone++;
+      if (t.biz)   bizDone++;
+    }
+    d.setDate(d.getDate()+1);
+  }
+  return { study: total ? Math.round(studyDone/total*100) : 0,
+           biz:   total ? Math.round(bizDone/total*100) : 0,
+           total };
+}
+
+// ════════════════════════════════════════════════════════════════
+//  MOMENTUM (last 3 weekdays)
+// ════════════════════════════════════════════════════════════════
+function calcMomentum() {
+  let days=[], d=new Date(todayD());
+  while (days.length<3) {
+    const dow=d.getDay();
+    if (dow!==0&&dow!==6&&inPlan(d)) {
+      const t=loadTicks(d);
+      days.push((t.study?1:0)+(t.biz?1:0)+(t.ex?1:0));
+    }
+    d.setDate(d.getDate()-1);
+  }
+  const avg = days.reduce((a,b)=>a+b,0)/(days.length*3);
+  if (avg>=.7) return { color:'var(--green)', bg:'var(--green-lt)', border:'#A9DFBF', label:'Strong momentum — you\'re in the groove. Keep it going.' };
+  if (avg>=.4) return { color:'var(--amber)', bg:'var(--amber-lt)', border:'#F5CBA7', label:'Momentum softening. One good day resets the pattern.' };
+  return { color:'var(--red)', bg:'var(--red-lt)', border:'#F1948A', label:'Momentum low. Start with exercise — it anchors everything else.' };
+}
+
+// ════════════════════════════════════════════════════════════════
+//  GOOGLE SHEETS — fetch all tabs
+// ════════════════════════════════════════════════════════════════
+async function fetchSheet(tab) {
+  if (!IS_CONFIGURED) return null;
+  const cacheKey = `sheet_${tab}`;
+  if (SESSION[cacheKey]) return SESSION[cacheKey];
+  try {
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${CFG.SHEET_ID}/values/${encodeURIComponent(tab)}?key=${CFG.SHEETS_API_KEY}`;
+    const r = await fetch(url);
+    if (!r.ok) return null;
+    const data = await r.json();
+    SESSION[cacheKey] = data.values || [];
+    return SESSION[cacheKey];
+  } catch(e) { return null; }
+}
+
+// Parse Schedule tab: cols = Week, Course, Focus, Biz, Phase, PhaseTag, PhaseBg, PhaseFg
+async function getScheduleWeek(wn) {
+  const rows = await fetchSheet('Schedule');
+  if (!rows) return FALLBACK_SCHEDULE[wn] || FALLBACK_SCHEDULE[16];
+  const row = rows.find(r => parseInt(r[0]) === wn);
+  if (!row) return FALLBACK_SCHEDULE[wn] || FALLBACK_SCHEDULE[16];
+  return { course:row[1]||'', focus:row[2]||'', biz:row[3]||'', phase:row[4]||'', phaseTag:row[5]||'', phaseBg:row[6]||'#D6E4F0', phaseFg:row[7]||'#1B4F72' };
+}
+
+// Parse WeeklyIntention tab: cols = Week, Intention
+async function getIntention(wn) {
+  const rows = await fetchSheet('WeeklyIntention');
+  if (!rows) return '';
+  const row = rows.find(r => parseInt(r[0])===wn);
+  return row ? (row[1]||'') : '';
+}
+
+async function saveIntention(wn, text) {
+  // Writes via Apps Script webhook — same endpoint used for Apple Calendar
+  if (!IS_CONFIGURED || !CFG.APPS_SCRIPT_URL) return false;
+  try {
+    await fetch(CFG.APPS_SCRIPT_URL, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ action:'intention', week:wn, text })
+    });
+    delete SESSION['sheet_WeeklyIntention'];
+    return true;
+  } catch(e) { return false; }
+}
+
+// Parse LaunchProject tab: cols = Category, Task, Status, Date, Notes
+async function getLaunchTasks() {
+  const rows = await fetchSheet('LaunchProject');
+  if (!rows || rows.length < 2) return FALLBACK_LAUNCH;
+  const data = rows.slice(1); // skip header
+  const cats = {};
+  data.forEach(r => {
+    const cat = r[0]||'Other';
+    if (!cats[cat]) cats[cat] = [];
+    cats[cat].push({ title:r[1]||'', status:r[2]||'To Do', date:r[3]||'', notes:r[4]||'' });
+  });
+  return Object.entries(cats).map(([cat,tasks]) => ({cat,tasks}));
+}
+
+// Parse Milestones tab: cols = Week, Icon, Title, Desc
+async function getMilestones() {
+  const rows = await fetchSheet('Milestones');
+  if (!rows || rows.length < 2) return FALLBACK_MILESTONES;
+  return rows.slice(1).map(r => ({ week:parseInt(r[0]), icon:r[1]||'🎯', title:r[2]||'', desc:r[3]||'' }));
+}
+
+// Parse AppleCalendar tab — written by iOS Shortcut
+async function getAppleCalendar() {
+  const rows = await fetchSheet('AppleCalendar');
+  if (!rows || rows.length < 2) return null;
+  // Find today's row: col A = date YYYY-MM-DD, col B = events text
+  const todayStr = todayD().toISOString().split('T')[0];
+  const row = rows.find(r => r[0] === todayStr);
+  return row ? row[1] : null;
+}
+
+// ════════════════════════════════════════════════════════════════
+//  GOOGLE CALENDAR
+// ════════════════════════════════════════════════════════════════
+async function fetchGCal() {
+  if (!IS_CONFIGURED || !CFG.GCAL_API_KEY || !CFG.GCAL_CALENDAR_ID) return null;
+  try {
+    const d = viewDate;
+    const tMin = new Date(d); tMin.setHours(0,0,0,0);
+    const tMax = new Date(d); tMax.setHours(23,59,59,999);
+    const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(CFG.GCAL_CALENDAR_ID)}/events?key=${CFG.GCAL_API_KEY}&timeMin=${tMin.toISOString()}&timeMax=${tMax.toISOString()}&singleEvents=true&orderBy=startTime&maxResults=10`;
+    const r = await fetch(url);
+    if (!r.ok) return null;
+    const data = await r.json();
+    return (data.items||[]).map(ev => {
+      const start = ev.start.dateTime ? new Date(ev.start.dateTime) : null;
+      const time = start ? start.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}) : 'All day';
+      return { time, title: ev.summary||'(no title)' };
+    });
+  } catch(e) { return null; }
+}
+
+// ════════════════════════════════════════════════════════════════
+//  RENDER ENGINE
+// ════════════════════════════════════════════════════════════════
+function switchTab(t) {
+  activeTab = t;
+  ['today','week','launch'].forEach(id => document.getElementById('tab-'+id).classList.toggle('on', id===t));
+  render();
+}
+
+function updateHeader() {
+  const t = todayD();
+  document.getElementById('hdrDate').textContent = fmt(t);
+  const wn = weekNum(t);
+  document.getElementById('hdrWeek').textContent = inPlan(t) ? `Week ${wn} of 16` : '';
+}
+
+async function render() {
+  updateHeader();
+  const main = document.getElementById('main');
+  if (activeTab==='today') main.innerHTML = await renderToday();
+  else if (activeTab==='week') main.innerHTML = await renderWeek();
+  else main.innerHTML = await renderLaunch();
+}
+
+// ── CHECK CIRCLE HTML ─────────────────────────────────────────
+function chkHtml(on) {
+  return `<div class="chk ${on?'on':''}">
+    ${on?`<svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+      <polyline points="2,6 5,9 10,3" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`:''}
+  </div>`;
+}
+
+// ── SETUP BANNER ──────────────────────────────────────────────
+function setupBanner() {
+  if (IS_CONFIGURED) return '';
+  return `<div class="setup-card">
+    <div class="setup-title">⚙️ Setup required</div>
+    <div class="setup-body">Open the HTML file, find the <code>CFG</code> block at the top, and fill in your Google Sheet ID, API keys, and Calendar ID. See the <strong>Wiring Guide</strong> document for step-by-step instructions.</div>
+  </div>`;
+}
+
+// ════════════════════════════════════════════════════════════════
+//  TAB: TODAY
+// ════════════════════════════════════════════════════════════════
+async function renderToday() {
+  const d = viewDate;
+  const dow = d.getDay();
+  const isWkend = dow===0||dow===6;
+  const wn = weekNum(d);
+  const wd = await getScheduleWeek(wn);
+  const ticks = loadTicks(d);
+  const inP = inPlan(d);
+
+  let h = setupBanner();
+
+  // Date nav
+  h += `<div class="date-nav">
+    <button class="nav-btn" onclick="shiftDay(-1)">‹</button>
+    <div class="date-c">
+      <div class="date-main">${fmt(d)}${isToday(d)?' <span style="color:var(--green);font-size:13px;font-weight:400;">· Today</span>':''}</div>
+      <div class="date-sub">${inP?`Week ${wn} of 16 · ${wd.phase}`:(d<CFG.PLAN_START?'Before plan start · 18 May 2026':'Plan complete')}</div>
+    </div>
+    <button class="nav-btn" onclick="shiftDay(1)">›</button>
+  </div>`;
+
+  if (!inP) {
+    h += `<div class="hero"><div class="hero-emoji">${d<CFG.PLAN_START?'⏳':'🎓'}</div>
+      <div class="hero-title">${d<CFG.PLAN_START?'Plan starts 18 May 2026':'16 Weeks Complete'}</div>
+      <div class="hero-body">${d<CFG.PLAN_START?'Navigate forward to see your first study week.':'The Coursera stack is done. Imperial next. Red Thread is live.'}</div></div>`;
+    return h;
+  }
+
+  if (isWkend) {
+    const isSun = dow===0;
+    h += `<div class="pill" style="background:${wd.phaseBg};color:${wd.phaseFg};">${wd.phaseTag}</div>`;
+    if (isSun) {
+      const intent = await getIntention(wn);
+      h += `<div class="card" style="border-color:#D4BBEE;">
+        <div class="card-row" style="cursor:default;">
+          <div class="card-body">
+            <div class="card-tag" style="color:var(--purple);">☀️ Sunday planning · 14:30 – 16:30</div>
+            <div class="card-title">Set your intention for Week ${wn}</div>
+            <div class="card-desc">${intent ? `"${intent}"` : 'No intention set yet — open Week Review to write one.'}</div>
+          </div>
+        </div>
+      </div>`;
+    }
+    h += `<div class="hero"><div class="hero-emoji">${isSun?'📋':'🐕'}</div>
+      <div class="hero-title">${isSun?'Sunday — Planning Day':'Saturday — Flex Day'}</div>
+      <div class="hero-body">${isSun?'Weekly planning block this afternoon. Review the week, write your intention, check Red Thread infrastructure.':'No study today. Personal time, recovery, dog walk. Explore AI out of genuine interest if you want — no obligation.'}</div></div>`;
+    return h;
+  }
+
+  // Phase pill
+  h += `<div class="pill" style="background:${wd.phaseBg};color:${wd.phaseFg};">${wd.phaseTag}</div>`;
+
+  // Weekly intention banner
+  const intent = await getIntention(wn);
+  if (intent) {
+    h += `<div style="background:var(--purple-lt);border:1px solid #D4BBEE;border-radius:10px;padding:11px 14px;margin-bottom:12px;">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--purple);margin-bottom:3px;">This week's intention</div>
+      <div style="font-size:13px;color:var(--ink);font-style:italic;line-height:1.45;">"${intent}"</div>
+    </div>`;
+  }
+
+  // ── TASKS ──
+  h += `<div class="sec-label">Today's three</div>`;
+
+  // Exercise
+  h += `<div class="card ${ticks.ex?'ticked':''}" onclick="toggleTick('ex')">
+    <div class="card-row">${chkHtml(ticks.ex)}
+      <div class="card-body">
+        <div class="card-tag" style="color:var(--green);">Exercise · 07:00 – 07:30</div>
+        <div class="card-title">Functional / kettlebell training</div>
+        <div class="card-desc">5 days a week. Feeds the streak.</div>
+      </div>
+    </div>
+  </div>`;
+
+  // Study
+  h += `<div class="card ${ticks.study?'ticked':''}" onclick="toggleTick('study')">
+    <div class="card-row">${chkHtml(ticks.study)}
+      <div class="card-body">
+        <div class="card-tag" style="color:var(--blue);">Study · 09:00 – 13:00</div>
+        <div class="card-title">${wd.course}</div>
+        <div class="card-desc">${wd.focus}</div>
+      </div>
+    </div>
+    <div class="card-foot">
+      <div class="card-foot-label">📝 Review prompt · 12:30 – 13:00</div>
+      <div class="card-foot-body">Write 3 things you learned. Add any new prompts to your library. Note anything directly applicable to Red Thread.</div>
+    </div>
+  </div>`;
+
+  // Business
+  h += `<div class="card ${ticks.biz?'ticked':''}" onclick="toggleTick('biz')">
+    <div class="card-row">${chkHtml(ticks.biz)}
+      <div class="card-body">
+        <div class="card-tag" style="color:var(--red);">Red Thread · 13:00 – 16:30</div>
+        <div class="card-title">Business build tasks</div>
+        <div class="card-desc">${wd.biz}</div>
+      </div>
+    </div>
+  </div>`;
+
+  // ── CALENDAR BLOCKS ──
+  h += `<div class="sec-label">Today's diary</div>`;
+
+  // Work (Google Calendar)
+  h += `<div class="cal-card" id="gcal-block">
+    <div class="cal-header">
+      <div class="cal-dot" style="background:var(--red);"></div>
+      <div class="cal-title" style="color:var(--red);">Work · Red Thread</div>
+    </div>
+    <div class="cal-loading"><div class="spinner"></div> Loading calendar…</div>
+  </div>`;
+
+  // Personal (Apple Calendar via Sheet)
+  h += `<div class="cal-card" id="acal-block">
+    <div class="cal-header">
+      <div class="cal-dot" style="background:var(--blue);"></div>
+      <div class="cal-title" style="color:var(--blue);">Personal & Family</div>
+    </div>
+    <div class="cal-loading"><div class="spinner"></div> Loading…</div>
+  </div>`;
+
+  h += `<div class="reset-wrap"><button onclick="resetDay()">Reset today's ticks</button></div>`;
+
+  // Async load calendars after render
+  setTimeout(loadCalendars, 50);
+
+  return h;
+}
+
+async function loadCalendars() {
+  // Work calendar
+  const gcalBlock = document.getElementById('gcal-block');
+  if (gcalBlock) {
+    if (!IS_CONFIGURED) {
+      gcalBlock.querySelector('.cal-loading').outerHTML = `<div class="cal-empty">Set up Google Calendar API to see work events here.</div>`;
+    } else {
+      const events = await fetchGCal();
+      const inner = gcalBlock.querySelector('.cal-loading');
+      if (!inner) return;
+      if (!events || events.length===0) {
+        inner.outerHTML = `<div class="cal-empty">No events today.</div>`;
+      } else {
+        inner.outerHTML = events.map(ev =>
+          `<div class="cal-event"><div class="cal-event-time">${ev.time}</div><div class="cal-event-name">${ev.title}</div></div>`
+        ).join('');
+      }
+    }
+  }
+
+  // Personal/Family calendar
+  const acalBlock = document.getElementById('acal-block');
+  if (acalBlock) {
+    if (!IS_CONFIGURED) {
+      acalBlock.querySelector('.cal-loading').outerHTML = `<div class="cal-empty">Set up the iOS Shortcut to push Apple Calendar events here.</div><div class="cal-error-note">See the Wiring Guide for setup instructions.</div>`;
+    } else {
+      const text = await getAppleCalendar();
+      const inner = acalBlock.querySelector('.cal-loading');
+      if (!inner) return;
+      if (!text) {
+        inner.outerHTML = `<div class="cal-empty">No events pushed today. Run the morning iOS Shortcut to populate this.</div>`;
+      } else {
+        // text is a pre-formatted string: "HH:MM Title\nHH:MM Title"
+        const lines = text.split('\n').filter(Boolean);
+        inner.outerHTML = lines.map(line => {
+          const parts = line.match(/^(\d{2}:\d{2})\s+(.+)$/);
+          if (parts) return `<div class="cal-event"><div class="cal-event-time">${parts[1]}</div><div class="cal-event-name">${parts[2]}</div></div>`;
+          return `<div class="cal-event"><div class="cal-event-time"></div><div class="cal-event-name">${line}</div></div>`;
+        }).join('');
+      }
+    }
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+//  TAB: WEEK REVIEW
+// ════════════════════════════════════════════════════════════════
+async function renderWeek() {
+  const weekdays = getWeekdays(viewDate);
+  const wn = weekNum(viewDate);
+  const wd = await getScheduleWeek(wn);
+  const streak = calcStreak();
+  const consist = calcConsistency();
+  const momentum = calcMomentum();
+  const milestones = await getMilestones();
+  const intent = await getIntention(wn);
+
+  const past = weekdays.filter(d => d <= todayD() && inPlan(d));
+  let studyW=0, bizW=0, exW=0;
+  past.forEach(d => { const t=loadTicks(d); if(t.study)studyW++; if(t.biz)bizW++; if(t.ex)exW++; });
+  const totalW = past.length;
+
+  const mon=weekdays[0], fri=weekdays[4];
+  const rangeLabel = `${fmtShort(mon)} – ${fmtShort(fri)}`;
+  const wkPlanTotal = weekNum(todayD());
+  const arcPct = Math.round((wkPlanTotal-1)/16*100);
+
+  let h = `<div style="margin-bottom:14px;">
+    <div style="font-size:16px;font-weight:700;">${rangeLabel}</div>
+    <div style="font-size:12px;color:var(--ink3);margin-top:2px;">${inPlan(viewDate)?`Week ${wn} of 16 · ${wd.phase}`:'Outside plan window'}</div>
+  </div>`;
+
+  // Exercise streak
+  const streakIcon = streak>=15?'🔥🔥':streak>=10?'🔥':streak>=5?'⚡':streak>=1?'✅':'—';
+  h += `<div class="streak-card">
+    <div class="streak-num">${streak}</div>
+    <div>
+      <div class="streak-label">Exercise streak</div>
+      <div class="streak-sub">consecutive weekdays</div>
+      <div class="streak-icon">${streakIcon}</div>
+    </div>
+  </div>`;
+
+  // Momentum
+  h += `<div class="momentum-card" style="background:${momentum.bg};border-color:${momentum.border};">
+    <div class="momentum-dot" style="background:${momentum.color};"></div>
+    <div class="momentum-text" style="color:${momentum.color};">${momentum.label}</div>
+  </div>`;
+
+  // This week stats
+  h += `<div class="stat-grid">
+    <div class="stat-card">
+      <div class="stat-num" style="color:var(--blue);">${studyW}<span class="stat-denom">/${totalW||5}</span></div>
+      <div class="stat-label">Study days<br>this week</div>
+      <div class="mini-bar-bg"><div class="mini-bar-fill" style="background:var(--blue);width:${totalW?Math.round(studyW/totalW*100):0}%;"></div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" style="color:var(--red);">${bizW}<span class="stat-denom">/${totalW||5}</span></div>
+      <div class="stat-label">Business days<br>this week</div>
+      <div class="mini-bar-bg"><div class="mini-bar-fill" style="background:var(--red);width:${totalW?Math.round(bizW/totalW*100):0}%;"></div></div>
+    </div>
+  </div>`;
+
+  // 16-week progress arc
+  h += `<div class="arc-card">
+    <div class="arc-title"><span>16-Week Progress Arc</span><span class="arc-pct">Week ${wkPlanTotal} · ${arcPct}%</span></div>
+    <div class="arc-weeks">`;
+  for (let i=1; i<=16; i++) {
+    const cls = i < wkPlanTotal ? 'done' : i===wkPlanTotal ? 'current' : '';
+    h += `<div class="arc-wk ${cls}">${i}</div>`;
+  }
+  h += `</div></div>`;
+
+  // Overall consistency
+  h += `<div class="consist-card">
+    <div style="font-size:13px;font-weight:600;color:var(--ink2);margin-bottom:10px;">Plan-wide consistency</div>
+    <div class="consist-row">
+      <div class="consist-label">Study</div>
+      <div class="consist-pct" style="color:var(--blue);">${consist.study}%</div>
+    </div>
+    <div class="mini-bar-bg" style="margin-bottom:10px;"><div class="mini-bar-fill" style="background:var(--blue);width:${consist.study}%;"></div></div>
+    <div class="consist-row">
+      <div class="consist-label">Business build</div>
+      <div class="consist-pct" style="color:var(--red);">${consist.biz}%</div>
+    </div>
+    <div class="mini-bar-bg"><div class="mini-bar-fill" style="background:var(--red);width:${consist.biz}%;"></div></div>
+    <div style="font-size:11px;color:var(--ink3);margin-top:8px;">Based on ${consist.total} weekdays tracked since plan start</div>
+  </div>`;
+
+  // Weekly intention
+  h += `<div class="intention-card">
+    <div class="intention-label">Week ${wn} intention ${IS_CONFIGURED?'<button class="btn-edit" onclick="toggleIntentionEdit()">edit</button>':''}
+    </div>`;
+  if (editingIntention) {
+    h += `<textarea class="intention-input" id="intentionInput" rows="3" placeholder="Write your intention for this week…">${intent}</textarea>
+      <button class="btn-save" onclick="submitIntention(${wn})">Save intention</button>`;
+  } else {
+    h += intent
+      ? `<div class="intention-text">"${intent}"</div>`
+      : `<div class="intention-empty">No intention set. ${IS_CONFIGURED?'Tap edit to add one.':'Connect Google Sheets to enable this.'}</div>`;
+  }
+  h += `</div>`;
+
+  // Day breakdown
+  h += `<div class="day-grid"><div class="day-grid-title">This week — day by day</div>`;
+  weekdays.forEach(d => {
+    const t = loadTicks(d);
+    const isPast = d <= todayD();
+    const inP = inPlan(d);
+    h += `<div class="day-row">
+      <div class="day-name">${DAY_SHORT[d.getDay()]}</div>
+      <div class="day-dots">`;
+    if (!inP||!isPast) {
+      h += `<span style="font-size:12px;color:#ccc;">${!inP?'—':'upcoming'}</span>`;
+    } else {
+      h += `<div class="dot ${t.study?'dot-s':'dot-x'}">S</div>`;
+      h += `<div class="dot ${t.biz?'dot-b':'dot-x'}">B</div>`;
+      h += `<div class="dot ${t.ex?'dot-e':'dot-x'}">E</div>`;
+    }
+    h += `</div></div>`;
+  });
+  h += `<div class="dot-legend">
+    <div class="dot-leg"><div class="dot-leg-dot" style="background:var(--blue);"></div>Study</div>
+    <div class="dot-leg"><div class="dot-leg-dot" style="background:var(--red);"></div>Business</div>
+    <div class="dot-leg"><div class="dot-leg-dot" style="background:var(--green);"></div>Exercise</div>
+    <div class="dot-leg"><div class="dot-leg-dot" style="background:var(--border);"></div>Missed / upcoming</div>
+  </div></div>`;
+
+  // Milestones
+  h += `<div class="sec-label">Milestones</div>`;
+  milestones.forEach(m => {
+    const unlocked = wkPlanTotal >= m.week;
+    h += `<div class="milestone ${unlocked?'':'locked'}">
+      <div class="milestone-icon">${m.icon}</div>
+      <div>
+        <div class="milestone-title">${m.title}</div>
+        <div class="milestone-sub">${m.desc}</div>
+        <span class="milestone-badge" style="${unlocked?'background:var(--green-lt);color:var(--green);border:1px solid #A9DFBF;':'background:var(--bg);color:var(--ink3);border:1px solid var(--border);'}">
+          ${unlocked?'✓ Unlocked':`Week ${m.week}`}
+        </span>
+      </div>
+    </div>`;
+  });
+
+  // Week nav
+  h += `<div class="week-nav" style="margin-top:14px;">
+    <button class="week-nav-btn" onclick="shiftWeek(-1)">‹ Prev week</button>
+    <div style="font-size:12px;color:var(--ink3);">Navigate</div>
+    <button class="week-nav-btn" onclick="shiftWeek(1)">Next week ›</button>
+  </div><div style="height:28px;"></div>`;
+
+  return h;
+}
+
+function toggleIntentionEdit() {
+  editingIntention = !editingIntention;
+  render();
+}
+
+async function submitIntention(wn) {
+  const input = document.getElementById('intentionInput');
+  if (!input) return;
+  const text = input.value.trim();
+  const ok = await saveIntention(wn, text);
+  editingIntention = false;
+  if (!ok) alert('Could not save — check your Apps Script URL in the config. You can also update the WeeklyIntention tab in your Google Sheet directly.');
+  render();
+}
+
+// ════════════════════════════════════════════════════════════════
+//  TAB: LAUNCH PROJECT
+// ════════════════════════════════════════════════════════════════
+async function renderLaunch() {
+  const tasks = await getLaunchTasks();
+  let total=0, done=0, inprog=0;
+  tasks.forEach(cat => cat.tasks.forEach(t => {
+    total++;
+    if (t.status==='Done') done++;
+    if (t.status==='In Progress') inprog++;
+  }));
+  const pct = total ? Math.round(done/total*100) : 0;
+
+  let h = setupBanner();
+
+  h += `<div style="font-size:17px;font-weight:700;margin-bottom:4px;">Red Thread Launch</div>
+    <div style="font-size:12px;color:var(--ink3);margin-bottom:14px;">Pre-launch infrastructure tracker</div>`;
+
+  // Progress
+  h += `<div class="launch-progress">
+    <div class="launch-progress-header">
+      <div class="launch-progress-title">Launch readiness</div>
+      <div class="launch-progress-pct">${pct}%</div>
+    </div>
+    <div class="prog-bar-bg"><div class="prog-bar-fill" style="width:${pct}%;"></div></div>
+    <div class="prog-counts">${done} of ${total} tasks complete · ${inprog} in progress</div>
+  </div>`;
+
+  if (!IS_CONFIGURED) {
+    h += `<div class="setup-card">
+      <div class="setup-title">📋 Manage tasks from Google Sheets</div>
+      <div class="setup-body">Once configured, edit the <strong>LaunchProject</strong> tab in your Sheet to update task status, add new tasks, or change target dates. Changes appear here immediately on refresh. The fallback task list below is pre-loaded from the 90-day launch plan.</div>
+    </div>`;
+  }
+
+  // Category sections
+  const statusMap = { 'Done':'status-done', 'In Progress':'status-progress', 'To Do':'status-todo' };
+
+  tasks.forEach(cat => {
+    const catDone = cat.tasks.filter(t=>t.status==='Done').length;
+    h += `<div class="launch-cat">
+      <div class="launch-cat-title">
+        ${cat.cat}
+        <span style="font-weight:400;color:var(--ink3);">${catDone}/${cat.tasks.length}</span>
+      </div>`;
+    cat.tasks.forEach(t => {
+      const cls = statusMap[t.status] || 'status-todo';
+      h += `<div class="launch-task">
+        <div class="launch-task-body">
+          <div class="launch-task-title" style="${t.status==='Done'?'text-decoration:line-through;color:#aaa;':''}">${t.title}</div>
+          ${t.notes?`<div class="launch-task-notes">${t.notes}</div>`:''}
+          ${t.date?`<div class="launch-task-date">Target: ${t.date}</div>`:''}
+        </div>
+        <span class="status-badge ${cls}">${t.status}</span>
+      </div>`;
+    });
+    h += `</div>`;
+  });
+
+  h += `<div style="height:28px;"></div>`;
+  return h;
+}
+
+// ════════════════════════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════════════════════════
+render();
+</script>
+</body>
+</html>
