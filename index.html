@@ -606,12 +606,15 @@ function saveTicks(d, obj) {
 async function syncTicksToSheet(d, obj) {
   if (!IS_CONFIGURED || !CFG.APPS_SCRIPT_URL) return;
   try {
-    // no-cors bypasses preflight — fire and forget, response not readable but write succeeds
-    await fetch(CFG.APPS_SCRIPT_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      body: JSON.stringify({ action: 'save_ticks', secret: CFG.APPS_SCRIPT_SECRET, date: dateStr(d), study: obj.study ? 1 : 0, biz: obj.biz ? 1 : 0, ex: obj.ex ? 1 : 0 })
+    const params = new URLSearchParams({
+      action: 'save_ticks',
+      secret: CFG.APPS_SCRIPT_SECRET,
+      date: dateStr(d),
+      study: obj.study ? 1 : 0,
+      biz: obj.biz ? 1 : 0,
+      ex: obj.ex ? 1 : 0
     });
+    await fetch(CFG.APPS_SCRIPT_URL + '?' + params.toString(), { mode: 'no-cors' });
   } catch(e) {}
 }
 async function loadTicksFromSheet() {
@@ -775,11 +778,13 @@ async function getIntention(wn) {
 async function saveIntention(wn, text) {
   if (!IS_CONFIGURED || !CFG.APPS_SCRIPT_URL) return false;
   try {
-    await fetch(CFG.APPS_SCRIPT_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      body: JSON.stringify({ action: 'intention', secret: CFG.APPS_SCRIPT_SECRET, week: wn, text })
+    const params = new URLSearchParams({
+      action: 'intention',
+      secret: CFG.APPS_SCRIPT_SECRET,
+      week: wn,
+      text: text
     });
+    await fetch(CFG.APPS_SCRIPT_URL + '?' + params.toString(), { mode: 'no-cors' });
     delete SESSION['sheet_WeeklyIntention'];
     return true;
   } catch(e) { return false; }
