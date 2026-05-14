@@ -606,9 +606,10 @@ function saveTicks(d, obj) {
 async function syncTicksToSheet(d, obj) {
   if (!IS_CONFIGURED || !CFG.APPS_SCRIPT_URL) return;
   try {
+    // no-cors bypasses preflight — fire and forget, response not readable but write succeeds
     await fetch(CFG.APPS_SCRIPT_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      mode: 'no-cors',
       body: JSON.stringify({ action: 'save_ticks', secret: CFG.APPS_SCRIPT_SECRET, date: dateStr(d), study: obj.study ? 1 : 0, biz: obj.biz ? 1 : 0, ex: obj.ex ? 1 : 0 })
     });
   } catch(e) {}
@@ -772,12 +773,12 @@ async function getIntention(wn) {
 }
 
 async function saveIntention(wn, text) {
-  // Writes via Apps Script webhook — same endpoint used for Apple Calendar
   if (!IS_CONFIGURED || !CFG.APPS_SCRIPT_URL) return false;
   try {
     await fetch(CFG.APPS_SCRIPT_URL, {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ action:'intention', secret: CFG.APPS_SCRIPT_SECRET, week:wn, text })
+      method: 'POST',
+      mode: 'no-cors',
+      body: JSON.stringify({ action: 'intention', secret: CFG.APPS_SCRIPT_SECRET, week: wn, text })
     });
     delete SESSION['sheet_WeeklyIntention'];
     return true;
