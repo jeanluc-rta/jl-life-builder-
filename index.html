@@ -745,11 +745,22 @@ async function fetchSheet(tab) {
 
 // Parse Schedule tab: cols = Week, Course, Focus, Biz, Phase, PhaseTag, PhaseBg, PhaseFg
 async function getScheduleWeek(wn) {
+  const safeWn = Math.min(Math.max(wn || 1, 1), 16);
   const rows = await fetchSheet('Schedule');
-  if (!rows) return FALLBACK_SCHEDULE[wn] || FALLBACK_SCHEDULE[16];
-  const row = rows.find(r => parseInt(r[0]) === wn);
-  if (!row) return FALLBACK_SCHEDULE[wn] || FALLBACK_SCHEDULE[16];
+  if (!rows) return FALLBACK_SCHEDULE[safeWn] || FALLBACK_SCHEDULE[1];
+  const row = rows.find(r => parseInt(r[0]) === safeWn);
+  if (!row) return FALLBACK_SCHEDULE[safeWn] || FALLBACK_SCHEDULE[1];
   return { course:row[1]||'', focus:row[2]||'', biz:row[3]||'', phase:row[4]||'', phaseTag:row[5]||'', phaseBg:row[6]||'#D6E4F0', phaseFg:row[7]||'#1B4F72' };
+}
+
+// Parse DailyStudy tab: cols = Date(YYYY-MM-DD), Course, Topic, Focus, Red Thread Note
+async function getDailyStudy(d) {
+  const ds = dateStr(d);
+  const rows = await fetchSheet('DailyStudy');
+  if (!rows || rows.length < 2) return null;
+  const row = rows.find(r => r[0] === ds);
+  if (!row) return null;
+  return { course: row[1]||''  , topic: row[2]||'', focus: row[3]||'', rtNote: row[4]||''  };
 }
 
 // Parse WeeklyIntention tab: cols = Week, Intention
@@ -918,6 +929,7 @@ async function renderToday() {
   const isWkend = dow===0||dow===6;
   const wn = weekNum(d);
   const wd = await getScheduleWeek(wn);
+  const dd = await getDailyStudy(d).catch(() => null);
   const ticks = loadTicks(d);
   const inP = inPlan(d);
 
@@ -987,13 +999,20 @@ async function renderToday() {
     </div>
   </div>`;
 
-  // Study
+  // Study — daily breakdown if available, fallback to weekly
+  const studyCourse = dd ? dd.course : wd.course;
+  const studyTopic  = dd ? dd.topic  : '';
+  const studyFocus  = dd ? dd.focus  : wd.focus;
+  const studyRTNote = dd ? dd.rtNote : '';
+
   h += `<div class="card ${ticks.study?'ticked':''}" onclick="toggleTick('study')">
     <div class="card-row">${chkHtml(ticks.study)}
       <div class="card-body">
         <div class="card-tag" style="color:var(--blue);">Study · 09:00 – 13:00</div>
-        <div class="card-title">${wd.course}</div>
-        <div class="card-desc">${wd.focus.split('.').map(s=>s.trim()).filter(Boolean).map(s=>'– '+s).join('<br>')}</div>
+        ${studyTopic ? `<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--blue);opacity:.7;margin-bottom:3px;">${studyTopic}</div>` : ''}
+        <div class="card-title">${studyCourse}</div>
+        <div class="card-desc">${studyFocus.split('.').map(s=>s.trim()).filter(Boolean).map(s=>'– '+s).join('<br>')}</div>
+        ${studyRTNote ? `<div style="margin-top:8px;padding:8px 10px;background:var(--red-lt);border-radius:6px;font-size:12px;color:var(--red);line-height:1.45;"><strong>🧵 Red Thread:</strong> ${studyRTNote}</div>` : ''}
       </div>
     </div>
     <div class="card-foot">
